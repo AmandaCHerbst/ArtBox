@@ -1,0 +1,142 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    height: 100%;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2D1B42;
+    padding: 10px;
+    color: white;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    width: 50px;
+    height: 50px;
+}
+
+.logo h1 a {
+    margin-left: 10px;
+    font-size: 24px;
+    text-decoration: none;
+    color: #f0f0f0;
+}
+
+.logo h1 a:hover {
+    font-size: 20px;
+    color: aqua;
+    transition: all 0.3s;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 20px;
+    padding: 5px 10px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 20px;
+}
+
+.search-bar img {
+    width: 20px;
+    height: 20px;
+    margin-left: 5px;
+}
+
+.profile-icon img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.content {
+    display: flex;
+    flex-grow: 1;
+}
+
+aside {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 10px;
+    padding: 10px;
+    background-color: #f0f0f0;
+}
+
+.category-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.category-icon img {
+    width: 100%; 
+    height: auto; 
+    max-width: 50px;
+    max-height: 50px;
+    object-fit: cover; 
+}
+.category-icon img:hover{
+    transition:all 0.3s;
+    width: 45px;
+    height: 45px;
+}
+
+main {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+main h2 {
+    margin-bottom: 20px;
+}
+
+.products {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.product {
+    border: 2px solid #000;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-image img {
+    width: 100%; 
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-details {
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+}
