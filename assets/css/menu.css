@@ -1,0 +1,22 @@
+.navbar__icons {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .navbar__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    background: #fff;
+    border-radius: 50%;
+    text-decoration: none;
+  }
+  
+  .navbar__icon svg {
+    width: 1.4rem;
+    height: 1.4rem;
+    stroke: #555;
+    fill: none;
+}
