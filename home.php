@@ -6,19 +6,7 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
-$arquivo_json = 'dados.json';
-$produtos = array();
 
-if (file_exists($arquivo_json)) {
-    $json_data = file_get_contents($arquivo_json);
-    $dados = json_decode($json_data, true);
-
-    if ($dados === null && json_last_error() !== JSON_ERROR_NONE) {
-        $dados = array();
-    }
-
-    $produtos = isset($dados['produtos']) ? $dados['produtos'] : array();
-}
 ?>
 
 <!DOCTYPE html>
