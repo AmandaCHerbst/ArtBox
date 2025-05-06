@@ -1,24 +1,11 @@
-<?php
-session_start();
+<?php 
+//session_start();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = $_POST['id'];
-    $senha = $_POST['senha'];
+//if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (isset($_SESSION['usuario']) && $_SESSION['usuario']['usuario'] === $id) {
-        if (password_verify($senha, $_SESSION['usuario']['senha'])) {
-            header('Location: home.php');
-            exit();
-        } else {
-            $_SESSION['message'] = 'Senha incorreta.';
-        }
-    } else {
-        $_SESSION['message'] = 'Usuário não encontrado.';
-    }
-
-    header('Location: login.php');
-    exit();
-}
+  //  header('Location: login.php');
+    //exit();
+//}
 ?>
 
 <!DOCTYPE html>
