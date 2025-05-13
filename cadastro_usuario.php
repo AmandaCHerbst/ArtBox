@@ -1,3 +1,55 @@
+<?php
+session_start();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verifica se todos os campos existem no POST
+    $nome = $_POST['nome'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $telefone = $_POST['telefone'] ?? '';
+    $senha = $_POST['senha'] ?? '';
+    $confirmar = $_POST['confirmar_senha'] ?? '';
+    $tipo = $_POST['tipo'] ?? 'normal';
+
+    // Valida senha
+    if ($senha !== $confirmar) {
+        $_SESSION['message'] = "Senhas não coincidem.";
+        header("Location: cadastro_usuario.php");
+        exit();
+    }
+
+    // Conexão corrigida com o nome do banco certo
+    $conn = new mysqli("localhost", "root", "", "ArtBoxBanco");
+
+    if ($conn->connect_error) {
+        die("Erro na conexão: " . $conn->connect_error);
+    }
+
+    // Verifica se o e-mail já existe
+    $stmt = $conn->prepare("SELECT idUSUARIO FROM usuarios WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->store_result();
+    
+    if ($stmt->num_rows > 0) {
+        $_SESSION['message'] = "E-mail já cadastrado.";
+        header("Location: cadastro_usuario.php");
+        exit();
+    }
+
+    // Hash da senha
+    $hash = password_hash($senha, PASSWORD_BCRYPT);
+
+    // Cadastro no banco - corrigido para incluir 'usuario'
+   $stmt = $conn->prepare("INSERT INTO usuarios (nomeUSUARIO, email, senha, telefone, tipo_usuario) VALUES (?, ?, ?, ?, ?)");
+$stmt->bind_param("sssss", $nome, $email, $hash, $telefone, $tipo);
+
+    $stmt->execute();
+
+    $_SESSION['message'] = "Cadastro realizado com sucesso!";
+    header("Location: login.php");
+    exit();
+}
+?>
 
 
 <!DOCTYPE html>
@@ -8,36 +60,6 @@
     <title>Cadastro</title>
     <link rel="stylesheet" href="assets/css/cadastro.css">
     <link rel="shortcut icon" href="assets/img/logo.png" type="image/x-icon">
-    <?php /*
-session_start();
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nome = $_POST['nome'];
-    $usuario = $_POST['usuario'];
-    $email = $_POST['email'];
-    $telefone = $_POST['telefone'];
-    $senha = $_POST['senha'];
-    $confirmar_senha = $_POST['confirmar_senha'];
-
-    if ($senha !== $confirmar_senha) {
-        $_SESSION['message'] = 'Senhas não coincidem.';
-        header('Location: index.php');
-        exit();
-    }
-    $_SESSION['usuario'] = [
-        'nome' => $nome,
-        'usuario' => $usuario,
-        'email' => $email,
-        'telefone' => $telefone,
-        'senha' => password_hash($senha, PASSWORD_BCRYPT) 
-    ];
-
-    $_SESSION['message'] = 'Cadastro realizado com sucesso!';
-    header('Location: login.php');
-    exit();
-}*/
-?>
-
 </head>
 <body>
     <form action="" method="post" class="form-row">
@@ -51,6 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="email" name="email" id="email" required><br>
             <label for="telefone">Telefone</label>
             <input type="tel" name="telefone" id="telefone" required><br>
+            <label for="tipo">Tipo de usuário</label>
+            <select name="tipo" id="tipo" required>
+                <option value="normal">Usuário Comum</option>
+                <option value="artesao">Artesão</option>
+            </select><br>
             <label for="senha">Senha</label>
             <input type="password" name="senha" id="senha" required><br>
             <label for="confirmar_senha">Confirmar Senha</label>

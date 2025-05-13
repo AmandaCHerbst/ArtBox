@@ -14,7 +14,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" href="assets/css/login.css">
     <link rel="shortcut icon" href="assets/img/logo.png" type="image/x-icon">
 </head>
 <body>
@@ -26,7 +25,7 @@
             <label for="senha">Senha</label><br>
             <input class="input" type="password" name="senha" id="senha" placeholder="Senha" required><br>
             <button type="submit">Entrar</button><br>
-            <button class="bnt-cad" type="button" onclick="window.location.href='index.php'">CADASTRO</button>
+            <button class="bnt-cad" type="button" onclick="window.location.href='cadastro_usuario.php'">CADASTRO</button>
         </form>
     </fieldset>        
 </body>

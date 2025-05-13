@@ -1,5 +1,5 @@
 <?php
-require_once _DIR_ . 'Usuarios.class.php';
+require_once DIR . 'Usuarios.class.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = isset($_POST['id'])? (int) $_POST['id']: 0;
@@ -17,11 +17,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     $usuario = new Usuarios($id, $nomeUSUARIO, $email, $senha, $telefone, $endereco, $cidade, $estado, $cep, $tipo_usuario);
-    //MUDAR
-    if ($acao == 'salvar') {
-        $resultado = ($id > 0) ? $usuarios->alterar() : $usuarios->inserir();
-    } elseif ($acao == 'excluir') {
-        $resultado = $usuarios->excluir();
+        if ($acao === 'salvar') {
+        if ($id > 0) {
+            $resultado = $usuario->alterar();
+        } else {
+            $resultado = $usuario->inserir();
+        }
+    } elseif ($acao === 'excluir') {
+        $resultado = $usuario->excluir();
+    } else {
+        $resultado = false;
     }
 
     if ($resultado) header('Location: index.php');
