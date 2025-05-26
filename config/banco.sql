@@ -14,7 +14,7 @@ create table if not exists usuarios (
     estado VARCHAR(2),
     cep VARCHAR(10),
     tipo_usuario ENUM('normal', 'artesao') NOT NULL DEFAULT 'normal',
-    usuario VARCHAR(100) NOT NULL,  -- Adicionando a coluna usuario
+    usuario VARCHAR(100) NOT NULL, 
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
