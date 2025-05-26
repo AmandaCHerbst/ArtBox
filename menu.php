@@ -17,7 +17,7 @@
           <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#555" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </a>
-      <a href="carrinho.php" class="navbar__icon" aria-label="Carrinho">
+      <a href="cart.php" class="navbar__icon" aria-label="Carrinho">
         <!-- carrinho SVG -->
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M6 6h15l-2 10H8L6 6z" stroke="#555" stroke-width="2" stroke-linejoin="round"/>
