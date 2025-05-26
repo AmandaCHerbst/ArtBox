@@ -4,25 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Produto - ARTBOX</title>
-    <link rel="stylesheet" href="assets/css/cad-img.css">
-    <link rel="shortcut icon" href="assets/img/logo.png" type="image/x-icon">
     
 </head>
 <body>
-    <div class="header">
-        <div class="logo">
-            <img src="assets/img/favicon.png" alt="Logo">
-            <a href="home.php">ARTBOX</a>
-        </div>
-        <div class="search-bar">
-            <input type="text" placeholder="Buscar...">
-            <button>🔍</button>
-        </div>
-        <div class="profile">
-            <img src="assets/img/user.svg" alt="Perfil">
-        </div>
-    </div>
-
+    
     <div class="main-content">
         <form action="upload.php" method="post" enctype="multipart/form-data">
             <div class="image-upload">
