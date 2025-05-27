@@ -25,6 +25,16 @@ create table if not exists categorias (
     descricao TEXT
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+CREATE TABLE IF NOT EXISTS produto_categorias (
+  idProdutoCategoria INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_produto          INT UNSIGNED NOT NULL,
+  id_categoria        INT UNSIGNED NOT NULL,
+  FOREIGN KEY (id_produto)   REFERENCES produtos(idPRODUTO)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (id_categoria) REFERENCES categorias(idCATEGORIA)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 create table if not exists produtos (
     idPRODUTO INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     nomePRODUTO VARCHAR(150) NOT NULL,

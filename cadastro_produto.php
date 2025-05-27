@@ -40,7 +40,7 @@
                 <div class="form-group colors">
                     <label>Cores Disponíveis</label>
                     <div>
-                        <input type="color" name="color" id="color">
+                        <input type="text" name="color" id="color">
                     </div>
                 </div>
 
