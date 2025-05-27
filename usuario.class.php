@@ -27,7 +27,7 @@ class Usuarios {
         $this->tipo_usuario = $tipo_usuario;
     }
     
-//mudar para jeito mais facil
+//...
     public function inserir(): bool {
         $conexao = new PDO(DSN, USUARIO, SENHA);
         $sql = "INSERT INTO pergunta (texto, tipo, opcoes, obrigatoria) VALUES (:texto, :tipo, :opcoes, :obrigatoria)";
@@ -100,7 +100,6 @@ class Usuarios {
         $this->obrigatoria = $obrigatoria;
     }
 
-    // ===== Getters =====
     public function getId(): int {
         return $this->id;
     }
