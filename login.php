@@ -1,7 +1,37 @@
-<?php 
+<?php
 session_start();
+require __DIR__ . '/config/config.inc.php';
+
+
+try {
+    $pdo = new PDO(DSN, USUARIO, SENHA);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erro ao conectar ao banco: " . $e->getMessage());
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $usuario = $_POST['id']; 
+    $senha   = $_POST['senha'];
+
+    $stmt = $pdo->prepare(
+        "SELECT idUSUARIO, nomeUSUARIO, senha, tipo_usuario
+         FROM usuarios
+         WHERE usuario = :usuario"
+    );
+    $stmt->execute([':usuario' => $usuario]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($user && password_verify($senha, $user['senha'])) {
+        $_SESSION['idUSUARIO']    = $user['idUSUARIO'];
+        $_SESSION['nomeUSUARIO']  = $user['nomeUSUARIO'];
+        $_SESSION['tipo_usuario'] = $user['tipo_usuario'];
+
+        header('Location: index.php');
+        exit;
+    } else {
+        $errorMessage = "Usuário ou senha inválidos.";
+    }
 }
 ?>
 <!DOCTYPE html>

@@ -1,52 +1,57 @@
 <?php
-require 'config/config.inc.php';
-$pdo = new PDO(DSN, USUARIO, SENHA);
+session_start();                                        
+require __DIR__ . '/config/config.inc.php';          
+
+try {
+    $pdo = new PDO(DSN, USUARIO, SENHA);                
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erro ao conectar ao banco: " . $e->getMessage());
+}
 
 if (!isset($_FILES['product-image']) || $_FILES['product-image']['error'] !== UPLOAD_ERR_OK) {
-  die("Erro no upload da imagem.");
+    die("Erro no upload da imagem.");
 }
-$allowed = ['jpg','jpeg','png','gif'];
+$allowed = ['jpg', 'jpeg', 'png', 'gif'];
 $ext = strtolower(pathinfo($_FILES['product-image']['name'], PATHINFO_EXTENSION));
 if (!in_array($ext, $allowed)) {
-  die("Tipo de arquivo não permitido.");
+    die("Tipo de arquivo não permitido.");
 }
 
 $newName = uniqid('prod_', true) . "." . $ext;
 $dest = __DIR__ . "/uploads/" . $newName;
 if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $dest)) {
-  die("Falha ao mover o arquivo.");
+    die("Falha ao mover o arquivo.");
 }
+$imgPath = "uploads/" . $newName;
 
-$nome      = $_POST['product-name'];
-$sizes     = isset($_POST['sizes']) ? implode(',', $_POST['sizes']) : '';
-$color     = $_POST['color'] ?? '';
-$quant     = (int)$_POST['quantity'];
-$price     = (float)$_POST['price'];
-$descr     = "Tamanhos: $sizes | Cores: $color";
-$imgPath   = "uploads/" . $newName;
-$idArt     = 1; // artesão fixo por enquanto
+$nome   = $_POST['product-name'] ?? '';
+$sizes  = isset($_POST['sizes']) ? implode(',', $_POST['sizes']) : '';
+$color  = $_POST['color'] ?? '';
+$quant  = (int) ($_POST['quantity'] ?? 0);
+$price  = (float) ($_POST['price'] ?? 0);
+$descr  = "Tamanhos: $sizes | Cores: $color";
 
-// 4) Insere em produtos
-$sql = "INSERT INTO produtos 
-  (nomePRODUTO, descricaoPRODUTO, precoPRODUTO, quantidade, imagemPRODUTO, id_artesao)
+if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
+    die("Acesso negado.");
+}
+$idArt = $_SESSION['idUSUARIO'];
+
+$sql = "INSERT INTO produtos
+    (nomePRODUTO, descricaoPRODUTO, precoPRODUTO, quantidade, imagemPRODUTO, id_artesao)
   VALUES (:nome, :descr, :price, :quant, :img, :art)";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([
-  ':nome'  => $nome,
-  ':descr' => $descr,
-  ':price' => $price,
-  ':quant' => $quant,
-  ':img'   => $imgPath,
-  ':art'   => $idArt
+    ':nome'  => $nome,
+    ':descr' => $descr,
+    ':price' => $price,
+    ':quant' => $quant,
+    ':img'   => $imgPath,
+    ':art'   => $idArt
 ]);
 $idProd = $pdo->lastInsertId();
 
-$catIds = [];
-
-if (!empty($_POST['categories'])) {
-    $catIds = $_POST['categories']; 
-}
-
+$catIds = $_POST['categories'] ?? [];
 if (!empty($_POST['new_categories'])) {
     $novas = array_filter(array_map('trim', explode(',', $_POST['new_categories'])));
     $selectCat = $pdo->prepare("SELECT idCATEGORIA FROM categorias WHERE nomeCATEGORIA = :nome");
@@ -74,5 +79,5 @@ if (!empty($catIds)) {
     }
 }
 
-header("Location: index.php?msg=Produto+cadastro+com+sucesso");
+header('Location: index.php?msg=Produto+cadastro+com+sucesso');
 exit;

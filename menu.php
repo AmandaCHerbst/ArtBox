@@ -1,5 +1,5 @@
 <?php
-if (session_status() == PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 ?>
@@ -18,11 +18,21 @@ if (session_status() == PHP_SESSION_NONE) {
     </form>
   </div>
   <div class="icons">
-    <a href="<?= isset($_SESSION['user_id']) ? 'profile.php' : 'login.php' ?>">
-      <span>&#128100;</span>
-    </a>
-    <a href="cart.php">
-      <span>&#128722;</span>
-    </a>
+    <?php if (isset($_SESSION['idUSUARIO'])): ?>
+      <a href="<?php
+        echo ($_SESSION['tipo_usuario'] === 'artesao')
+             ? 'perfil_artesao.php'
+             : 'perfil_normal.php';
+      ?>">
+        <span>&#128100;</span>
+      </a>
+      <a href="logout.php">
+        <span>&#128682;</span> <!-- ícone de porta/Logout -->
+      </a>
+    <?php else: ?>
+      <a href="login.php"><span>&#128100;</span></a>
+    <?php endif; ?>
+    <a href="cart.php"><span>&#128722;</span></a>
   </div>
 </nav>
+

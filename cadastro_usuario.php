@@ -1,56 +1,77 @@
 <?php
-/*
-session_start();
+session_start();                                       
+require __DIR__ . '/config/config.inc.php';
+             
+try {
+    $pdo = new PDO(DSN, USUARIO, SENHA);                
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erro ao conectar ao banco: " . $e->getMessage());
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verifica se todos os campos existem no POST
-    $nome = $_POST['nome'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $telefone = $_POST['telefone'] ?? '';
-    $senha = $_POST['senha'] ?? '';
-    $confirmar = $_POST['confirmar_senha'] ?? '';
-    $tipo = $_POST['tipo'] ?? 'normal';
+    $nome       = $_POST['nome'] ?? '';
+    $usuario    = $_POST['usuario'] ?? '';
+    $email      = $_POST['email'] ?? '';
+    $telefone   = $_POST['telefone'] ?? '';
+    $tipo       = $_POST['tipo'] ?? 'normal';
+    $senha      = $_POST['senha'] ?? '';
+    $confirmar  = $_POST['confirmar_senha'] ?? '';
 
-    // Valida senha
     if ($senha !== $confirmar) {
-        $_SESSION['message'] = "Senhas não coincidem.";
+        $_SESSION['message']  = "Senhas não coincidem.";
+        $_SESSION['msg_type'] = 'error';
         header("Location: cadastro_usuario.php");
         exit();
     }
 
-    // Conexão corrigida com o nome do banco certo
-    $conn = new mysqli("localhost", "root", "", "ArtBoxBanco");
-
-    if ($conn->connect_error) {
-        die("Erro na conexão: " . $conn->connect_error);
-    }
-
-    // Verifica se o e-mail já existe
-    $stmt = $conn->prepare("SELECT idUSUARIO FROM usuarios WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $stmt->store_result();
-    
-    if ($stmt->num_rows > 0) {
-        $_SESSION['message'] = "E-mail já cadastrado.";
+    $stmt = $pdo->prepare("SELECT idUSUARIO FROM usuarios WHERE email = :email");
+    $stmt->execute([':email' => $email]);
+    if ($stmt->fetch()) {
+        $_SESSION['message']  = "E-mail já cadastrado.";
+        $_SESSION['msg_type'] = 'error';
         header("Location: cadastro_usuario.php");
         exit();
     }
 
-    // Hash da senha
+    $stmt = $pdo->prepare("SELECT idUSUARIO FROM usuarios WHERE usuario = :user");
+    $stmt->execute([':user' => $usuario]);
+    if ($stmt->fetch()) {
+        $_SESSION['message']  = "Nome de usuário já em uso.";
+        $_SESSION['msg_type'] = 'error';
+        header("Location: cadastro_usuario.php");
+        exit();
+    }
+
     $hash = password_hash($senha, PASSWORD_BCRYPT);
 
-    // Cadastro no banco - corrigido para incluir 'usuario'
-   $stmt = $conn->prepare("INSERT INTO usuarios (nomeUSUARIO, email, senha, telefone, tipo_usuario) VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("sssss", $nome, $email, $hash, $telefone, $tipo);
+    // Insere usuário
+    $stmt = $pdo->prepare(
+        "INSERT INTO usuarios
+         (nomeUSUARIO, usuario, email, senha, telefone, tipo_usuario)
+         VALUES (:nome, :user, :email, :senha, :tel, :tipo)"
+    );
+    $stmt->execute([
+        ':nome'  => $nome,
+        ':user'  => $usuario,
+        ':email' => $email,
+        ':senha' => $hash,
+        ':tel'   => $telefone,
+        ':tipo'  => $tipo
+    ]);
 
-    $stmt->execute();
-
-    $_SESSION['message'] = "Cadastro realizado com sucesso!";
-    header("Location: login.php");
-    exit();
+    if ($stmt->rowCount()) {
+        $_SESSION['message']  = "Cadastro realizado com sucesso!";
+        $_SESSION['msg_type'] = 'success';
+        header("Location: login.php");
+        exit();
+    } else {
+        $_SESSION['message']  = "Erro ao cadastrar.";
+        $_SESSION['msg_type'] = 'error';
+        header("Location: cadastro_usuario.php");
+        exit();
+    }
 }
-*/
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -75,39 +96,45 @@ $stmt->bind_param("sssss", $nome, $email, $hash, $telefone, $tipo);
         </div>
 
         <div class="form-group">
-          <label for="nome" class="form-label">Nome</label>
-          <input type="text" name="nome" id="nome" class="form-input" required>
+          <label for="nome">Nome</label>
+          <input type="text" name="nome" id="nome" required>
         </div>
+
         <div class="form-group">
-          <label for="usuario" class="form-label">Usuário</label>
-          <input type="text" name="usuario" id="usuario" class="form-input" required>
+          <label for="usuario">Usuário</label>
+          <input type="text" name="usuario" id="usuario" required>
         </div>
+
         <div class="form-group">
-          <label for="email" class="form-label">E-mail</label>
-          <input type="email" name="email" id="email" class="form-input" required>
+          <label for="email">E-mail</label>
+          <input type="email" name="email" id="email" required>
         </div>
+
         <div class="form-group">
-          <label for="telefone" class="form-label">Telefone</label>
-          <input type="tel" name="telefone" id="telefone" class="form-input" required>
+          <label for="telefone">Telefone</label>
+          <input type="tel" name="telefone" id="telefone">
         </div>
+
         <div class="form-group">
-          <label for="tipo" class="form-label">Tipo de usuário</label>
-          <select name="tipo" id="tipo" class="form-select" required>
+          <label for="tipo">Tipo de usuário</label>
+          <select name="tipo" id="tipo" required>
             <option value="normal">Usuário Comum</option>
             <option value="artesao">Artesão</option>
           </select>
         </div>
+
         <div class="form-group">
-          <label for="senha" class="form-label">Senha</label>
-          <input type="password" name="senha" id="senha" class="form-input" required>
+          <label for="senha">Senha</label>
+          <input type="password" name="senha" id="senha" required>
         </div>
+
         <div class="form-group">
-          <label for="confirmar_senha" class="form-label">Confirmar Senha</label>
-          <input type="password" name="confirmar_senha" id="confirmar_senha" class="form-input" required>
+          <label for="confirmar_senha">Confirmar Senha</label>
+          <input type="password" name="confirmar_senha" id="confirmar_senha" required>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn-login">Cadastrar</button>
+          <button type="submit">Cadastrar</button>
         </div>
     </form>
 

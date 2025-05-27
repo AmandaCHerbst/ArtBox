@@ -1,46 +1,40 @@
 <?php
-session_start();
+session_start();                                       
 include 'menu.php';
-require 'config/config.inc.php';
-
-// Inicializa o carrinho caso não exista
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
-}
-
+require __DIR__ . '/config/config.inc.php';
+            
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// 1) Adicionar item via POST do botão "Adicionar ao carrinho" do index.php
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'], $_POST['quantity']) && !isset($_POST['quantities'])) {
     $productId = (int) $_POST['product_id'];
-    $qtyToAdd = max(1, (int) $_POST['quantity']);
+    $qtyToAdd  = max(1, (int) $_POST['quantity']);
 
-    // Busca quantidade disponível em estoque
     $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
     $stmtStock->execute([$productId]);
     $stock = (int) $stmtStock->fetchColumn();
 
-    // Calcula nova quantidade no carrinho
     $currentQty = $_SESSION['cart'][$productId] ?? 0;
     $newQty = min($currentQty + $qtyToAdd, $stock);
-
     $_SESSION['cart'][$productId] = $newQty;
 
     header('Location: cart.php');
     exit;
 }
 
-// 2) Atualizar quantidades via formulário de edição em cart.php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quantities']) && is_array($_POST['quantities'])) {
     foreach ($_POST['quantities'] as $prodId => $qty) {
-        $pid = (int) $prodId;
+        $pid     = (int) $prodId;
         $desired = max(0, (int) $qty);
 
-        // Verifica estoque
         $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
         $stmtStock->execute([$pid]);
         $stock = (int) $stmtStock->fetchColumn();
@@ -48,7 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quantities']) && is_a
         if ($desired > 0) {
             $_SESSION['cart'][$pid] = min($desired, $stock);
         } else {
-            // Remove se zerar
             unset($_SESSION['cart'][$pid]);
         }
     }
@@ -56,7 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quantities']) && is_a
     exit;
 }
 
-// Busca detalhes dos produtos no carrinho
 $items = [];
 $total = 0;
 if (!empty($_SESSION['cart'])) {
@@ -67,18 +59,18 @@ if (!empty($_SESSION['cart'])) {
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($products as $prod) {
-        $pid = $prod['idPRODUTO'];
-        $qty = $_SESSION['cart'][$pid];
+        $pid      = $prod['idPRODUTO'];
+        $qty      = $_SESSION['cart'][$pid];
         $subtotal = $prod['precoPRODUTO'] * $qty;
-        $total += $subtotal;
+        $total   += $subtotal;
         $items[] = [
-            'id' => $pid,
-            'nome' => $prod['nomePRODUTO'],
-            'preco' => $prod['precoPRODUTO'],
-            'imagem' => $prod['imagemPRODUTO'],
-            'quantidade' => $qty,
-            'subtotal' => $subtotal,
-            'estoque' => $prod['estoque'],
+            'id'        => $pid,
+            'nome'      => $prod['nomePRODUTO'],
+            'preco'     => $prod['precoPRODUTO'],
+            'imagem'    => $prod['imagemPRODUTO'],
+            'quantidade'=> $qty,
+            'subtotal'  => $subtotal,
+            'estoque'   => $prod['estoque'],
         ];
     }
 }
@@ -135,9 +127,7 @@ if (!empty($_SESSION['cart'])) {
                                    class="quantity-input">
                         </td>
                         <td>R$ <?= number_format($item['subtotal'], 2, ',', '.') ?></td>
-                        <td>
-                            <!-- Remova ou trate se quiser botões individuais -->
-                        </td>
+                        <td><!-- Ação se necessário --></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -156,4 +146,3 @@ if (!empty($_SESSION['cart'])) {
     <?php endif; ?>
 </body>
 </html>
-

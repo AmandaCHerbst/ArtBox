@@ -77,13 +77,3 @@ create table if not exists itens_pedido (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
---problema dos usuarios
-INSERT INTO usuarios
-  (nomeUSUARIO, email, senha, tipo_usuario, usuario)
-VALUES
-  ('Artesão Padrão', 'artesao@exemplo.com',
-   '$2y$10$VfE1K9AZB9mH7e3c2u1QZu1V0u07K2Rd/u7pq2aPzQzBbOKZkLJUa',
-   'artesao', 'artesao_padrao');
-SELECT idUSUARIO FROM usuarios -- 1
-  WHERE email = 'artesao@exemplo.com';

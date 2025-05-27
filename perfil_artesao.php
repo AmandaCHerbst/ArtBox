@@ -1,72 +1,65 @@
 <?php
-session_start();
-
-// Verifica se o usuário está logado
-/*if (!isset($_SESSION['id_artesao'])) {
-    header("Location: login.php");
-    exit();
+session_start();                                      
+require __DIR__ . '/config/config.inc.php';
+            
+try {
+    $pdo = new PDO(DSN, USUARIO, SENHA);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-$idArtesao = $_SESSION['id_artesao'];
-*/
-// Conexão com o banco de dados
-$conn = new mysqli("localhost", "usuario", "senha", "ArtBoxBanco");
-if ($conn->connect_error) {
-    die("Erro na conexão: " . $conn->connect_error);
+if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
+    header('Location: login.php');
+    exit;
 }
 
-// Consulta os produtos cadastrados pelo artesão
-$sql = "SELECT nome, descricao, imagem FROM produtos WHERE id_artesao = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $idArtesao);
-$stmt->execute();
-$result = $stmt->get_result();
+$idArtesao = $_SESSION['idUSUARIO'];
+
+$stmt = $pdo->prepare(
+    "SELECT nomePRODUTO AS nome,
+            descricaoPRODUTO AS descricao,
+            imagemPRODUTO AS imagem
+     FROM produtos
+     WHERE id_artesao = :id"
+);
+$stmt->execute([':id' => $idArtesao]);
+$produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Perfil do Artesão</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil do Artesão - ARTBOX</title>
+  <link rel="stylesheet" href="assets/css/perfil.css">
 </head>
 <body>
-
-  <!-- Perfil -->
   <header>
     <img src="caminho/para/imagem.jpg" alt="Foto do Artesão" width="150" height="150">
-    <h1>Bem-vindo, <?php echo htmlspecialchars($_SESSION['nome']); ?></h1>
+    <h1>Bem-vindo, <?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1>
+    <nav>
+      <a href="cadastro_produto.php">Cadastrar Novo Produto</a>
+      <a href="pedidos.php">Gerenciar Pedidos</a>
+      <a href="logout.php">Sair</a>
+    </nav>
   </header>
 
-  <!-- Link para cadastro de produto -->
-  <section>
-    <a href="cadastro_produto.php">Cadastrar Novo Produto</a>
-  </section>
-
-  <!-- Navegação -->
-  <section>
-    <h2>Gerenciar Pedidos</h2>
-    <button onclick="location.href='pedidos.php'">Pedidos</button>
-    <button onclick="location.href='a_caminho.php'">A Caminho</button>
-    <button onclick="location.href='realizados.php'">Realizados</button>
-  </section>
-
-  <!-- Produtos do artesão -->
-  <section>
-    <h2>Meus Produtos</h2>
-
-    <?php if ($result->num_rows > 0): ?>
-      <?php while ($produto = $result->fetch_assoc()): ?>
-        <div>
-          <img src="<?php echo htmlspecialchars($produto['imagem']); ?>" alt="Imagem do Produto" width="100" height="100">
-          <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
-          <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
-        </div>
-      <?php endwhile; ?>
-    <?php else: ?>
-      <p>Você ainda não cadastrou nenhum produto.</p>
-    <?php endif; ?>
-
-  </section>
-
+  <main>
+    <section>
+      <h2>Meus Produtos</h2>
+      <?php if (count($produtos) > 0): ?>
+        <?php foreach ($produtos as $p): ?>
+          <div class="produto-card">
+            <img src="<?= htmlspecialchars($p['imagem']) ?>" alt="<?= htmlspecialchars($p['nome']) ?>" width="100" height="100">
+            <h3><?= htmlspecialchars($p['nome']) ?></h3>
+            <p><?= htmlspecialchars($p['descricao']) ?></p>
+          </div>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <p>Você ainda não cadastrou nenhum produto.</p>
+      <?php endif; ?>
+    </section>
+  </main>
 </body>
 </html>

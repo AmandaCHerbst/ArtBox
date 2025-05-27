@@ -1,3 +1,23 @@
+<?php
+session_start();                                        
+require __DIR__ . '/config/config.inc.php';
+
+try {
+    $pdo = new PDO(DSN, USUARIO, SENHA);               
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Erro ao conectar ao banco: " . $e->getMessage());
+}
+
+if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
+    header('Location: login.php');
+    exit;
+}
+
+$cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
+            ->fetchAll(PDO::FETCH_ASSOC);
+?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -35,11 +55,6 @@
         </div>
       </div>
 
-      <?php
-        require 'config/config.inc.php';
-        $pdo = new PDO(DSN, USUARIO, SENHA);
-        $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")->fetchAll(PDO::FETCH_ASSOC);
-      ?>
       <div class="product-form-group">
         <label>Categorias</label>
         <div class="options-inline">
@@ -83,7 +98,6 @@
     <div class="produto-footer">
       <p><a href="index.php">Voltar ao Início</a></p>
     </div>
-  </div>
   </div>
 
 </body>

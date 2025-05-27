@@ -1,4 +1,4 @@
 <?php
-//FALTA ARRUMAR CSS E LOGIN!!!
+//css falta algumas páginas
 //barra de pesquisa
 ?>

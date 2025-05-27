@@ -1,13 +1,21 @@
 <?php
+// index.php
+session_start();                                         // ativa sessão
 include 'menu.php';
-require 'config/config.inc.php';
+require __DIR__ . '/config/config.inc.php';
+
+
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-$stmt = $pdo->query("SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, imagemPRODUTO FROM produtos");
+// Busca produtos para exibir
+$stmt = $pdo->query(
+    "SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, imagemPRODUTO FROM produtos"
+);
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
