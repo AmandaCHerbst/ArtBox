@@ -37,6 +37,25 @@
                     </div>
                 </div>
 
+                <?php
+
+                 require 'config/config.inc.php';
+                    $pdo = new PDO(DSN, USUARIO, SENHA);
+                    $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")->fetchAll(PDO::FETCH_ASSOC);
+                ?>
+
+                <div class="form-group categories">
+                    <label>Categorias</label>
+                        <div class="categories-options">
+                            <?php foreach($cats as $c): ?>
+                    <label>
+                    <input type="checkbox" name="categories[]" value="<?= $c['idCATEGORIA'] ?>">
+                            <?= htmlspecialchars($c['nomeCATEGORIA']) ?>
+                    </label>
+                            <?php endforeach; ?>
+                        </div>
+                </div>
+
                 <div class="form-group colors">
                     <label>Cores Disponíveis</label>
                     <div>
