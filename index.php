@@ -7,7 +7,6 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// Busca produtos (ajuste se quiser paginar ou filtrar)
 $stmt = $pdo->query("SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, imagemPRODUTO FROM produtos");
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
