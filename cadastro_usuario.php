@@ -1,4 +1,5 @@
 <?php
+/*
 session_start();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -49,41 +50,70 @@ $stmt->bind_param("sssss", $nome, $email, $hash, $telefone, $tipo);
     header("Location: login.php");
     exit();
 }
+*/
 ?>
-
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro</title>
-    <link rel="stylesheet" href="assets/css/cadastro.css">
-    <link rel="shortcut icon" href="assets/img/logo.png" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro - ARTBOX</title>
+  <link rel="stylesheet" href="assets/css/login.css">
 </head>
 <body>
-    <form action="" method="post" class="form-row">
-        <fieldset>
-            <h1 class="cad">CADASTRO</h1><br>
-            <label for="nome">Nome</label>  
-            <input type="text" name="nome" id="nome" required><br>
-            <label for="usuario">Usuário</label>
-            <input type="text" name="usuario" id="usuario" required><br>
-            <label for="email">E-mail</label>
-            <input type="email" name="email" id="email" required><br>
-            <label for="telefone">Telefone</label>
-            <input type="tel" name="telefone" id="telefone" required><br>
-            <label for="tipo">Tipo de usuário</label>
-            <select name="tipo" id="tipo" required>
-                <option value="normal">Usuário Comum</option>
-                <option value="artesao">Artesão</option>
-            </select><br>
-            <label for="senha">Senha</label>
-            <input type="password" name="senha" id="senha" required><br>
-            <label for="confirmar_senha">Confirmar Senha</label>
-            <input type="password" name="confirmar_senha" id="confirmar_senha" required><br>   
-            <button type="submit">Cadastrar</button>
-        </fieldset>
+  <div class="login-container">
+    <?php if (!empty($_SESSION['message'])): ?>
+      <div class="error-msg" <?php if($_SESSION['msg_type']==='success') echo 'style="color:#28a745;"'; ?>>
+        <?= htmlspecialchars($_SESSION['message']) ?>
+      </div>
+      <?php unset($_SESSION['message'], $_SESSION['msg_type']); ?>
+    <?php endif; ?>
+
+    <form action="" method="post" class="login-form">
+        <div class="login-header">
+          <h1 class="form-title">CADASTRO</h1>
+        </div>
+
+        <div class="form-group">
+          <label for="nome" class="form-label">Nome</label>
+          <input type="text" name="nome" id="nome" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="usuario" class="form-label">Usuário</label>
+          <input type="text" name="usuario" id="usuario" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="email" class="form-label">E-mail</label>
+          <input type="email" name="email" id="email" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="telefone" class="form-label">Telefone</label>
+          <input type="tel" name="telefone" id="telefone" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="tipo" class="form-label">Tipo de usuário</label>
+          <select name="tipo" id="tipo" class="form-select" required>
+            <option value="normal">Usuário Comum</option>
+            <option value="artesao">Artesão</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="senha" class="form-label">Senha</label>
+          <input type="password" name="senha" id="senha" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="confirmar_senha" class="form-label">Confirmar Senha</label>
+          <input type="password" name="confirmar_senha" id="confirmar_senha" class="form-input" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-login">Cadastrar</button>
+        </div>
     </form>
+
+    <div class="login-footer">
+      <p>Já tem conta? <a href="login.php">Entrar</a></p>
+    </div>
+  </div>
 </body>
 </html>

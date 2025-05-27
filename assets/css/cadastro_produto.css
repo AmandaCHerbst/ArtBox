@@ -1,0 +1,99 @@
+  /* Fonte e espaçamento da página */
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f7f7f7;
+  }
+
+  /* Container geral do formulário */
+  .product-form-container {
+    background: #ffffff;
+    max-width: 600px;
+    margin: 0 auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 30px;
+  }
+
+  /* Cabeçalho */
+  .product-form-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .product-form-header h1 {
+    font-size: 1.5rem;
+    color: #333;
+  }
+
+  /* Cada grupo de campo */
+  .product-form-group {
+    margin-bottom: 15px;
+  }
+  .product-form-group label {
+    display: block;
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 5px;
+  }
+
+  /* Inputs e selects */
+  .product-form-group input[type="text"],
+  .product-form-group input[type="number"],
+  .product-form-group input[type="file"],
+  .product-form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  .product-form-group input:focus,
+  .product-form-group select:focus {
+    outline: none;
+    border-color: #28a745;
+  }
+
+  /* Checkboxes inline */
+  .product-form-group .options-inline label {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  .product-form-group .options-inline input {
+    margin-right: 4px;
+  }
+
+  /* Área de preço especial */
+  .price-input {
+    display: flex;
+    align-items: center;
+  }
+  .price-input span {
+    margin-right: 6px;
+    font-size: 1rem;
+    color: #555;
+  }
+  .price-input input {
+    flex: 1;
+  }
+
+  /* Botão principal */
+  .btn-submit-product {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #28a745;
+    color: #fff;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 20px;
+  }
+  .btn-submit-product:hover {
+    background: #218838;
+  }
