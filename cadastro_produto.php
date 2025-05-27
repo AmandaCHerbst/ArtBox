@@ -80,6 +80,10 @@
       <button type="submit" class="btn-submit-product">Cadastrar Produto</button>
 
     </form>
+    <div class="produto-footer">
+      <p><a href="index.php">Voltar ao Início</a></p>
+    </div>
+  </div>
   </div>
 
 </body>

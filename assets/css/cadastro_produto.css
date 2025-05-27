@@ -97,3 +97,16 @@
   .btn-submit-product:hover {
     background: #218838;
   }
+
+.produto-footer {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.85rem;
+    }
+    .produto-footer a {
+      color: #28a745;
+      text-decoration: none;
+    }
+    .produto-footer a:hover {
+      text-decoration: underline;
+    }
