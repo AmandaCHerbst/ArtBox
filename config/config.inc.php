@@ -6,4 +6,3 @@ define('HOST', 'localhost'); // ip do servidor do banco
 define('PORT', '3306'); // porta do mysql
 define('DB', 'ArtBoxBanco'); // nome do banco
 define('DSN', "mysql:host=".HOST.";port=".PORT.";dbname=".DB.";charset=UTF8");
-?>
