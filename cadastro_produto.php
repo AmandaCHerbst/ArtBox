@@ -61,7 +61,7 @@
                 <div class="form-group new-categories">
                     <label for="new-categories">Novas Categorias <small>(separadas por vírgula)</small></label>
                         <input type="text" id="new-categories" name="new_categories" placeholder="ex: pintura, tela, tinta">
-                </div>
+                +    </div>
 
 
                 <div class="form-group colors">
