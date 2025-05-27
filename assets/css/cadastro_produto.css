@@ -1,11 +1,9 @@
-  /* Fonte e espaçamento da página */
   body {
     font-family: Arial, sans-serif;
     padding: 20px;
     background: #f7f7f7;
   }
 
-  /* Container geral do formulário */
   .product-form-container {
     background: #ffffff;
     max-width: 600px;
@@ -16,7 +14,6 @@
     padding: 30px;
   }
 
-  /* Cabeçalho */
   .product-form-header {
     text-align: center;
     margin-bottom: 20px;
@@ -26,7 +23,6 @@
     color: #333;
   }
 
-  /* Cada grupo de campo */
   .product-form-group {
     margin-bottom: 15px;
   }
@@ -37,7 +33,6 @@
     margin-bottom: 5px;
   }
 
-  /* Inputs e selects */
   .product-form-group input[type="text"],
   .product-form-group input[type="number"],
   .product-form-group input[type="file"],
@@ -55,7 +50,6 @@
     border-color: #28a745;
   }
 
-  /* Checkboxes inline */
   .product-form-group .options-inline label {
     display: inline-block;
     margin-right: 10px;
@@ -66,7 +60,6 @@
     margin-right: 4px;
   }
 
-  /* Área de preço especial */
   .price-input {
     display: flex;
     align-items: center;
@@ -80,7 +73,6 @@
     flex: 1;
   }
 
-  /* Botão principal */
   .btn-submit-product {
     display: block;
     width: 100%;

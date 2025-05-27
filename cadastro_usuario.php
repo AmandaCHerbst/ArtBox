@@ -45,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $hash = password_hash($senha, PASSWORD_BCRYPT);
 
-    // Insere usuário
     $stmt = $pdo->prepare(
         "INSERT INTO usuarios
          (nomeUSUARIO, usuario, email, senha, telefone, tipo_usuario)

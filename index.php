@@ -1,6 +1,5 @@
 <?php
-// index.php
-session_start();                                         // ativa sessão
+session_start();                   
 include 'menu.php';
 require __DIR__ . '/config/config.inc.php';
 
@@ -12,7 +11,6 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// Busca produtos para exibir
 $stmt = $pdo->query(
     "SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, imagemPRODUTO FROM produtos"
 );

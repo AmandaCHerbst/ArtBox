@@ -1,5 +1,4 @@
 <?php
-// perfil_artesao.php
 session_start();
 require __DIR__ . '/config/config.inc.php';
 include 'menu.php';
@@ -91,12 +90,12 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
   <header>
-    <img src="caminho/para/imagem.jpg" alt="Foto do Artesão">
+    <img src="assets/img/perfil.png" alt="Foto do Artesão">
     <div>
       <h1>Bem-vindo, <?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1> <br>
       <nav>
         <a href="cadastro_produto.php">Cadastrar Novo Produto</a>
-        <a href="pedidos.php">Gerenciar Pedidos</a>
+  <!--  <a href="pedidos.php">Gerenciar Pedidos</a> -->
         <a href="logout.php">Sair</a>
       </nav>
     </div>

@@ -1,26 +1,20 @@
 <?php
-// excluir.php
 require 'config/config.inc.php';
 
-// Conexão PDO
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// Se veio um pedido de exclusão:
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_id'])) {
     $delId = (int) $_POST['delete_id'];
-    // Remover produto
     $stmtDel = $pdo->prepare("DELETE FROM produtos WHERE idPRODUTO = :id");
     $stmtDel->execute([':id' => $delId]);
-    // Redireciona para evitar repost
     header("Location: excluir.php");
     exit;
 }
 
-// Busca todos os produtos
 $stmt = $pdo->query("SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, quantidade FROM produtos ORDER BY data_cadastro DESC");
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
