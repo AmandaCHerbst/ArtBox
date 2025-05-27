@@ -1,3 +1,0 @@
-<?php
-//barra de pesquisa
-?>
