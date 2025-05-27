@@ -65,7 +65,7 @@ create table if not exists pedidos (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 create table if not exists itens_pedido (
-    idintens_pedido INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    iditens_pedido INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     id_pedido INT UNSIGNED NOT NULL,
     id_produto INT UNSIGNED NOT NULL,
     quantidade INT UNSIGNED NOT NULL,

@@ -42,9 +42,11 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
                 <div class="card-body">
                     <div>
-                        <h2 class="product-title"><?= htmlspecialchars($p['nomePRODUTO']) ?></h2>
+                       <a href="produto.php?id=<?= $produto['idPRODUTO'] ?>"> <h2 class="product-title"><?= htmlspecialchars($p['nomePRODUTO']) ?></h2></a>
                         <p class="product-price">R$ <?= number_format($p['precoPRODUTO'], 2, ',', '.') ?></p>
                     </div>
+    
+
                     <form action="cart.php" method="post">
                         <input type="hidden" name="product_id" value="<?= $p['idPRODUTO'] ?>">
                         <input type="hidden" name="quantity" value="1">
