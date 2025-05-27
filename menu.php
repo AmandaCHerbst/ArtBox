@@ -1,31 +1,26 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/menu.css">
-    
-</head>
-<body>
-    
-
-<div class="navbar__icons">
-      <a href="login.php" class="navbar__icon" aria-label="Login">
-        <!-- usuário SVG -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="8" r="4" stroke="#555" stroke-width="2"/>
-          <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="#555" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </a>
-      <a href="cart.php" class="navbar__icon" aria-label="Carrinho">
-        <!-- carrinho SVG -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M6 6h15l-2 10H8L6 6z" stroke="#555" stroke-width="2" stroke-linejoin="round"/>
-          <circle cx="9" cy="20" r="1" fill="#555"/>
-          <circle cx="18" cy="20" r="1" fill="#555"/>
-        </svg>
-      </a>
+<?php
+session_start();
+?>
+<style>
+  .navbar { display: flex; align-items: center; justify-content: space-between; background: #333; color: #fff; padding: 10px 20px; }
+  .navbar .logo { font-size: 1.5rem; font-weight: bold; text-decoration: none; color: #fff; }
+  .navbar .search { flex: 1; margin: 0 20px; }
+  .navbar .search input { width: 100%; padding: 5px 10px; border-radius: 4px; border: none; }
+  .navbar .icons a { margin-left: 15px; text-decoration: none; color: #fff; font-size: 1.2rem; }
+</style>
+<nav class="navbar">
+  <a href="index.php" class="logo">ARTBOX</a>
+  <div class="search">
+    <form action="index.php" method="get">
+      <input type="text" name="q" placeholder="Pesquisar produtos...">
+    </form>
   </div>
-
-</body>
-</html>
+  <div class="icons">
+    <a href="<?= isset($_SESSION['user_id']) ? 'profile.php' : 'login.php' ?>">
+      <span>&#128100;</span>
+    </a>
+    <a href="cart.php">
+      <span>&#128722;</span>
+    </a>
+  </div>
+</nav>

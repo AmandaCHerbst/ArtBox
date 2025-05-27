@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<?php include 'menu.php'; ?>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">

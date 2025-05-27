@@ -1,5 +1,5 @@
 <?php
-// index.php - Lista de produtos
+include 'menu.php';
 require 'config/config.inc.php';
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
