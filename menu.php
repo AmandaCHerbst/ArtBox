@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 ?>
 <style>
   .navbar { display: flex; align-items: center; justify-content: space-between; background: #333; color: #fff; padding: 10px 20px; }

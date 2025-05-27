@@ -1,6 +1,6 @@
 <?php
-include 'menu.php';
 session_start();
+include 'menu.php';
 require 'config/config.inc.php';
 
 // Inicializa o carrinho caso não exista
