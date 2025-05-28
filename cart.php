@@ -103,10 +103,7 @@ if (!empty($_SESSION['cart'])) {
         .btn-danger:hover { background: #c82333; }
     </style>
 </head>
-
-</head>
-    <body>
-
+<body>
     <h1>Seu Carrinho</h1>
 
     <?php if (empty($items)): ?>
@@ -142,7 +139,8 @@ if (!empty($_SESSION['cart'])) {
                         <td>R$ <?= number_format($item['subtotal'], 2, ',', '.') ?></td>
                         <td>
                             <form method="post" action="cart.php" style="display:inline;">
-                                <button type="submit" name="remove" value="<?= $item['id'] ?>" class="btn btn-danger">Remover</button>
+                                <input type="hidden" name="remove" value="<?= $item['id'] ?>">
+                                <button type="submit" class="btn btn-danger">Remover</button>
                             </form>
                         </td>
                     </tr>
@@ -151,8 +149,6 @@ if (!empty($_SESSION['cart'])) {
             </table>
 
             <button type="submit" class="btn btn-primary">Atualizar Carrinho</button>
-        </form>
-                    </button>
         </form>
 
         <div class="total">
