@@ -35,7 +35,7 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </style>
 </head>
 <body>
-    <h1>Produtos</h1>
+    <h1>Recomendados</h1>
     <div class="grid">
         <?php foreach ($produtos as $p): ?>
             <div class="product-card">

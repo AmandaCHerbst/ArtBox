@@ -100,7 +100,8 @@ if (!empty($_SESSION['cart'])) {
     <h1>Seu Carrinho</h1>
 
     <?php if (empty($items)): ?>
-        <p>O carrinho está vazio. <a href="index.php">Voltar às compras</a></p>
+        <center><p>O carrinho está vazio.</p> <br>
+        <a href="index.php"> <button class="btn btn-primary">Voltar as compras</button></a></center>
     <?php else: ?>
         <form method="post" action="cart.php">
             <table class="cart-table">
@@ -111,7 +112,7 @@ if (!empty($_SESSION['cart'])) {
                         <th>Preço</th>
                         <th>Quantidade</th>
                         <th>Subtotal</th>
-                        <th>Ação</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,7 +128,11 @@ if (!empty($_SESSION['cart'])) {
                                    class="quantity-input">
                         </td>
                         <td>R$ <?= number_format($item['subtotal'], 2, ',', '.') ?></td>
-                        <td><!-- Ação se necessário --></td>
+                        <td><form method="post" action="cart.php" style="display:inline;">
+                                <input type="hidden" name="quantities[<?= $item['id'] ?>]" value="0">
+                                <button type="submit" class="btn btn-danger">Remover</button>
+                            </form>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

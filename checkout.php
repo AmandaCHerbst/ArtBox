@@ -4,9 +4,8 @@ include 'menu.php';
 
 $compraFinalizada = false;
 
-// Simulando o processamento do pedido após envio
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    // Coleta de dados
+
     $nome = $_POST["nome"];
     $telefone = $_POST["telefone"];
     $email = $_POST["email"];

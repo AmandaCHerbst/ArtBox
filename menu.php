@@ -27,7 +27,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <span>&#128100;</span>
       </a>
       <a href="logout.php">
-        <span>&#128682;</span> <!-- ícone de porta/Logout -->
+        <span>&#128682;</span>
       </a>
     <?php else: ?>
       <a href="login.php"><span>&#128100;</span></a>
