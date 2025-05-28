@@ -1,9 +1,9 @@
 <?php
-session_start();                                        
+session_start();
 require __DIR__ . '/config/config.inc.php';
 
 try {
-    $pdo = new PDO(DSN, USUARIO, SENHA);               
+    $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
@@ -17,7 +17,6 @@ if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
 $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
             ->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -46,11 +45,22 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
       </div>
 
       <div class="product-form-group">
+        <label for="product-description">Descrição do Produto</label>
+        <textarea id="product-description"
+                  name="product-description"
+                  rows="4"
+                  placeholder="Detalhes do produto"
+                  required></textarea>
+      </div>
+
+      <div class="product-form-group">
         <label>Tamanhos Disponíveis</label>
         <div class="options-inline">
           <?php $sizes = ['Único','PP','P','M','G','GG','XG','XGG']; ?>
           <?php foreach($sizes as $s): ?>
-            <label><input type="checkbox" name="sizes[]" value="<?= $s ?>"> <?= $s ?></label>
+            <label>
+              <input type="checkbox" name="sizes[]" value="<?= $s ?>"> <?= $s ?>
+            </label>
           <?php endforeach; ?>
         </div>
       </div>
@@ -59,7 +69,10 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
         <label>Categorias</label>
         <div class="options-inline">
           <?php foreach($cats as $c): ?>
-            <label><input type="checkbox" name="categories[]" value="<?= $c['idCATEGORIA'] ?>"> <?= htmlspecialchars($c['nomeCATEGORIA']) ?></label>
+            <label>
+              <input type="checkbox" name="categories[]" value="<?= $c['idCATEGORIA'] ?>">
+              <?= htmlspecialchars($c['nomeCATEGORIA']) ?>
+            </label>
           <?php endforeach; ?>
         </div>
       </div>
@@ -71,7 +84,7 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
 
       <div class="product-form-group">
         <label for="color">Cores Disponíveis</label>
-        <input type="text" id="color" name="color" placeholder="ex: vermelho, azul">
+        <input type="text" id="color" name="color" placeholder="ex: vermelho, azul" required>
       </div>
 
       <div class="product-form-group">

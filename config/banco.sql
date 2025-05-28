@@ -35,10 +35,12 @@ CREATE TABLE IF NOT EXISTS produto_categorias (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-create table if not exists produtos (
+CREATE TABLE IF NOT EXISTS produtos (
     idPRODUTO INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     nomePRODUTO VARCHAR(150) NOT NULL,
-    descricaoPRODUTO TEXT,
+    descricaoPRODUTO TEXT NOT NULL,
+    tamanhos_disponiveis VARCHAR(255) DEFAULT NULL,
+    cores_disponiveis VARCHAR(255) DEFAULT NULL,
     precoPRODUTO DECIMAL(10,2) NOT NULL,
     quantidade INT UNSIGNED NOT NULL DEFAULT 0,
     imagemPRODUTO VARCHAR(255),
@@ -46,12 +48,10 @@ create table if not exists produtos (
     id_artesao INT UNSIGNED NOT NULL,
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_categoria) REFERENCES categorias(idCATEGORIA)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
+        ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (id_artesao) REFERENCES usuarios(idUSUARIO)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 create table if not exists pedidos (
     idPEDIDO INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -65,7 +65,7 @@ create table if not exists pedidos (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 create table if not exists itens_pedido (
-    iditens_pedido INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    idintens_pedido INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     id_pedido INT UNSIGNED NOT NULL,
     id_produto INT UNSIGNED NOT NULL,
     quantidade INT UNSIGNED NOT NULL,

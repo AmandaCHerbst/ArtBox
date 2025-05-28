@@ -1,8 +1,8 @@
 <?php
-session_start();                   
+session_start();
 include 'menu.php';
 require __DIR__ . '/config/config.inc.php';
-
+require_once __DIR__ . '/classes/Produto.class.php';
 
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
@@ -11,10 +11,8 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-$stmt = $pdo->query(
-    "SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, imagemPRODUTO FROM produtos"
-);
-$produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$produtoObj = new Produto($pdo);
+$produtos   = $produtoObj->listar();
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -39,18 +37,29 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="grid">
         <?php foreach ($produtos as $p): ?>
             <div class="product-card">
-                <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
+                <?php if (!empty($p['imagemPRODUTO'])): ?>
+                    <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>"
+                         alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
+                <?php else: ?>
+                    <div style="padding:50px; text-align:center;">Sem imagem</div>
+                <?php endif; ?>
+
                 <div class="card-body">
                     <div>
-                       <a href="produto.php?id=<?= $produto['idPRODUTO'] ?>"> <h2 class="product-title"><?= htmlspecialchars($p['nomePRODUTO']) ?></h2></a>
-                        <p class="product-price">R$ <?= number_format($p['precoPRODUTO'], 2, ',', '.') ?></p>
+                        <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
+                          <h2 class="product-title"><?= htmlspecialchars($p['nomePRODUTO']) ?></h2>
+                        </a>
+                        <p class="product-price">
+                          R$ <?= number_format($p['precoPRODUTO'], 2, ',', '.') ?>
+                        </p>
                     </div>
-    
 
                     <form action="cart.php" method="post">
                         <input type="hidden" name="product_id" value="<?= $p['idPRODUTO'] ?>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="add-cart-btn">Adicionar ao carrinho</button>
+                        <button type="submit" class="add-cart-btn">
+                          Adicionar ao carrinho
+                        </button>
                     </form>
                 </div>
             </div>
