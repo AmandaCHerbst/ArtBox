@@ -1,8 +1,8 @@
 <?php
-session_start();                                       
+session_start();
 include 'menu.php';
 require __DIR__ . '/config/config.inc.php';
-            
+
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -14,7 +14,7 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'], $_POST['quantity']) && !isset($_POST['quantities'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'], $_POST['quantity']) && !isset($_POST['remove']) && empty($_POST['quantities'])) {
     $productId = (int) $_POST['product_id'];
     $qtyToAdd  = max(1, (int) $_POST['quantity']);
 
@@ -45,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quantities']) && is_a
             unset($_SESSION['cart'][$pid]);
         }
     }
+    header('Location: cart.php');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove'])) {
+    $removeId = (int) $_POST['remove'];
+    unset($_SESSION['cart'][$removeId]);
     header('Location: cart.php');
     exit;
 }
@@ -80,7 +87,7 @@ if (!empty($_SESSION['cart'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrinho - ARTBOX</title>
+    <title>carrinho</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
         .cart-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
@@ -96,12 +103,17 @@ if (!empty($_SESSION['cart'])) {
         .btn-danger:hover { background: #c82333; }
     </style>
 </head>
-<body>
+
+</head>
+    <body>
+
     <h1>Seu Carrinho</h1>
 
     <?php if (empty($items)): ?>
-        <center><p>O carrinho está vazio.</p> <br>
-        <a href="index.php"> <button class="btn btn-primary">Voltar as compras</button></a></center>
+        <center>
+            <p>O carrinho está vazio.</p><br>
+            <a href="index.php"><button class="btn btn-primary">Voltar às compras</button></a>
+        </center>
     <?php else: ?>
         <form method="post" action="cart.php">
             <table class="cart-table">
@@ -112,7 +124,7 @@ if (!empty($_SESSION['cart'])) {
                         <th>Preço</th>
                         <th>Quantidade</th>
                         <th>Subtotal</th>
-                        <th></th>
+                        <th>Ação</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -128,9 +140,9 @@ if (!empty($_SESSION['cart'])) {
                                    class="quantity-input">
                         </td>
                         <td>R$ <?= number_format($item['subtotal'], 2, ',', '.') ?></td>
-                        <td><form method="post" action="cart.php" style="display:inline;">
-                                <input type="hidden" name="quantities[<?= $item['id'] ?>]" value="0">
-                                <button type="submit" class="btn btn-danger">Remover</button>
+                        <td>
+                            <form method="post" action="cart.php" style="display:inline;">
+                                <button type="submit" name="remove" value="<?= $item['id'] ?>" class="btn btn-danger">Remover</button>
                             </form>
                         </td>
                     </tr>
@@ -139,6 +151,8 @@ if (!empty($_SESSION['cart'])) {
             </table>
 
             <button type="submit" class="btn btn-primary">Atualizar Carrinho</button>
+        </form>
+                    </button>
         </form>
 
         <div class="total">
