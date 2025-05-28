@@ -10,6 +10,7 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
+// Validação upload de imagem
 if (!isset($_FILES['product-image']) || $_FILES['product-image']['error'] !== UPLOAD_ERR_OK) {
     die("Erro no upload da imagem.");
 }
@@ -20,6 +21,7 @@ if (!in_array($ext, $allowed)) {
     die("Tipo de arquivo não permitido.");
 }
 
+// Movendo arquivo
 $newName = uniqid('prod_', true) . "." . $ext;
 $dest    = __DIR__ . "/uploads/" . $newName;
 if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $dest)) {
@@ -27,11 +29,13 @@ if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $dest)) {
 }
 $imgPath = "uploads/" . $newName;
 
+// Checagem de sessão de artesão
 if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
     die("Acesso negado.");
 }
 $idArt = $_SESSION['idUSUARIO'];
 
+// Captura dos dados do formulário
 $nome        = trim($_POST['product-name'] ?? '');
 $descricao   = trim($_POST['product-description'] ?? '');
 $sizesArr    = $_POST['sizes'] ?? [];
@@ -40,8 +44,9 @@ $cores       = trim($_POST['color'] ?? '');
 $quant       = (int) ($_POST['quantity'] ?? 0);
 $price       = (float) ($_POST['price'] ?? 0);
 
+// Insere usando Produto.class.php
 $produtoObj = new Produto($pdo);
-$idNovo = $produtoObj->inserir([
+$idProd     = $produtoObj->inserir([
     'nome'       => $nome,
     'descricao'  => $descricao,
     'tamanhos'   => $tamanhos,
@@ -52,26 +57,10 @@ $idNovo = $produtoObj->inserir([
     'id_artesao' => $idArt
 ]);
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([
-    ':nome'     => $nome,
-    ':descr'    => $descricao,
-    ':tamanhos' => $tamanhos,
-    ':cores'    => $cores,
-    ':price'    => $price,
-    ':quant'    => $quant,
-    ':img'      => $imgPath,
-    ':art'      => $idArt
-]);
-
-$idProd = $pdo->lastInsertId();
-
-// Categorias (existentes e novas), mesma lógica anterior...
+// Relação categorias (existentes e novas)
 $catIds = $_POST['categories'] ?? [];
 if (!empty($_POST['new_categories'])) {
-    $novas = array_filter(
-        array_map('trim', explode(',', $_POST['new_categories']))
-    );
+    $novas = array_filter(array_map('trim', explode(',', $_POST['new_categories'])));
     $selectCat = $pdo->prepare("SELECT idCATEGORIA FROM categorias WHERE nomeCATEGORIA = :nome");
     $insertCat = $pdo->prepare("INSERT INTO categorias (nomeCATEGORIA) VALUES (:nome)");
     foreach ($novas as $nomeCat) {
@@ -85,8 +74,7 @@ if (!empty($_POST['new_categories'])) {
     }
 }
 if (!empty($catIds)) {
-    $sql2 = "INSERT INTO produto_categorias (id_produto, id_categoria) VALUES (:prod, :cat)";
-    $stmt2 = $pdo->prepare($sql2);
+    $stmt2 = $pdo->prepare("INSERT INTO produto_categorias (id_produto, id_categoria) VALUES (:prod, :cat)");
     foreach ($catIds as $catId) {
         $stmt2->execute([
             ':prod' => $idProd,
@@ -95,5 +83,6 @@ if (!empty($catIds)) {
     }
 }
 
+// Redireciona com sucesso
 header('Location: index.php?msg=Produto+cadastro+com+sucesso');
 exit;

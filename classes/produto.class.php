@@ -1,23 +1,15 @@
 <?php
-/**
- * Classe Produto: gerencia operações CRUD e consultas para produtos no banco.
- */
 class Produto {
     /** @var PDO Conexão PDO com o banco */
     private $pdo;
 
     /**
-     * Construtor injeta a dependência PDO
-     *
      * @param PDO $pdo
      */
     public function __construct(PDO $pdo) {
         $this->pdo = $pdo;
     }
-
     /**
-     * Busca um produto pelo ID, incluindo categorias relacionadas.
-     *
      * @param int $id
      * @return array|false Retorna array associativo do produto ou false se não encontrar
      */
@@ -37,8 +29,6 @@ class Produto {
     }
 
     /**
-     * Lista todos os produtos.
-     *
      * @return array Lista de arrays associativos de produtos
      */
     public function listar(): array {
@@ -48,8 +38,6 @@ class Produto {
     }
 
     /**
-     * Insere um novo produto no banco.
-     *
      * @param array $dados Assoc. com chaves: nome, descricao, tamanhos, cores, preco, quantidade, imagem, id_artesao
      * @return int ID do produto inserido
      */
@@ -76,8 +64,6 @@ class Produto {
     }
 
     /**
-     * Atualiza um produto existente.
-     *
      * @param int $id
      * @param array $dados Mesmas chaves que inserir()
      * @return bool True se alterou pelo menos uma linha
@@ -109,10 +95,8 @@ class Produto {
     }
 
     /**
-     * Exclui um produto pelo ID.
-     *
      * @param int $id
-     * @return bool True se removeu
+     * @return bool 
      */
     public function excluir(int $id): bool {
         $sql = "DELETE FROM produtos WHERE idPRODUTO = :id";
