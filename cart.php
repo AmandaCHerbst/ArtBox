@@ -14,7 +14,12 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'], $_POST['quantity']) && !isset($_POST['remove']) && empty($_POST['quantities'])) {
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['product_id'], $_POST['quantity']) &&
+    empty($_POST['quantities']) &&
+    !isset($_POST['remove'])
+) {
     $productId = (int) $_POST['product_id'];
     $qtyToAdd  = max(1, (int) $_POST['quantity']);
 
@@ -22,18 +27,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'], $_POST[
     $stmtStock->execute([$productId]);
     $stock = (int) $stmtStock->fetchColumn();
 
-    $currentQty = $_SESSION['cart'][$productId] ?? 0;
-    $newQty = min($currentQty + $qtyToAdd, $stock);
-    $_SESSION['cart'][$productId] = $newQty;
+    $current = $_SESSION['cart'][$productId] ?? 0;
+    $_SESSION['cart'][$productId] = min($current + $qtyToAdd, $stock);
 
     header('Location: cart.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quantities']) && is_array($_POST['quantities'])) {
-    foreach ($_POST['quantities'] as $prodId => $qty) {
-        $pid     = (int) $prodId;
-        $desired = max(0, (int) $qty);
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['update']) &&
+    isset($_POST['quantities']) &&
+    is_array($_POST['quantities'])
+) {
+    foreach ($_POST['quantities'] as $pid => $q) {
+        $pid     = (int)$pid;
+        $desired = max(0, (int)$q);
 
         $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
         $stmtStock->execute([$pid]);
@@ -56,28 +65,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove'])) {
     exit;
 }
 
+if (!isset($_SESSION['idUSUARIO'])) {
+    header('Location: login.php?redirect=cart.php');
+    exit;
+}
+
 $items = [];
 $total = 0;
 if (!empty($_SESSION['cart'])) {
     $ids = array_keys($_SESSION['cart']);
-    $in  = str_repeat('?,', count($ids) - 1) . '?';
-    $stmt = $pdo->prepare("SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, imagemPRODUTO, quantidade AS estoque FROM produtos WHERE idPRODUTO IN ($in)");
+    $ph  = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("
+        SELECT idPRODUTO AS id,
+               nomePRODUTO AS nome,
+               precoPRODUTO AS preco,
+               quantidade  AS estoque,
+               imagemPRODUTO AS imagem
+        FROM produtos
+        WHERE idPRODUTO IN ($ph)
+    ");
     $stmt->execute($ids);
-    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($products as $prod) {
-        $pid      = $prod['idPRODUTO'];
-        $qty      = $_SESSION['cart'][$pid];
-        $subtotal = $prod['precoPRODUTO'] * $qty;
-        $total   += $subtotal;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $p) {
+        $qtd  = $_SESSION['cart'][$p['id']];
+        $sub  = $p['preco'] * $qtd;
+        $total += $sub;
         $items[] = [
-            'id'        => $pid,
-            'nome'      => $prod['nomePRODUTO'],
-            'preco'     => $prod['precoPRODUTO'],
-            'imagem'    => $prod['imagemPRODUTO'],
-            'quantidade'=> $qty,
-            'subtotal'  => $subtotal,
-            'estoque'   => $prod['estoque'],
+            'id'         => $p['id'],
+            'nome'       => $p['nome'],
+            'preco'      => $p['preco'],
+            'estoque'    => $p['estoque'],
+            'imagem'     => $p['imagem'],
+            'quantidade'=> $qtd,
+            'subtotal'   => $sub,
         ];
     }
 }
@@ -85,79 +104,80 @@ if (!empty($_SESSION['cart'])) {
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>carrinho</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .cart-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .cart-table th, .cart-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        .cart-table img { width: 50px; height: 50px; object-fit: cover; }
-        .quantity-input { width: 60px; }
-        .total { font-size: 1.2rem; text-align: right; margin-bottom: 20px; }
-        .actions { text-align: right; }
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-primary:hover { background: #0069d9; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-danger:hover { background: #c82333; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Carrinho</title>
+  <style>
+    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+    .quantity-input { width:60px; }
+    .btn { padding:8px 12px; border:none; border-radius:4px; cursor:pointer; }
+    .btn-danger { background:#dc3545; color:#fff; }
+    .btn-primary { background:#007bff; color:#fff; }
+    .actions { text-align:right; margin-top:10px; }
+    .total { text-align:right; font-size:1.2rem; margin-top:10px; }
+  </style>
 </head>
 <body>
-    <h1>Seu Carrinho</h1>
+  <h1>Seu Carrinho</h1>
 
-    <?php if (empty($items)): ?>
-        <center>
-            <p>O carrinho está vazio.</p><br>
-            <a href="index.php"><button class="btn btn-primary">Voltar às compras</button></a>
-        </center>
-    <?php else: ?>
-        <form method="post" action="cart.php">
-            <table class="cart-table">
-                <thead>
-                    <tr>
-                        <th>Imagem</th>
-                        <th>Produto</th>
-                        <th>Preço</th>
-                        <th>Quantidade</th>
-                        <th>Subtotal</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($items as $item): ?>
-                    <tr>
-                        <td><img src="<?= htmlspecialchars($item['imagem']) ?>" alt=""></td>
-                        <td><?= htmlspecialchars($item['nome']) ?></td>
-                        <td>R$ <?= number_format($item['preco'], 2, ',', '.') ?></td>
-                        <td>
-                            <input type="number" name="quantities[<?= $item['id'] ?>]"
-                                   value="<?= $item['quantidade'] ?>"
-                                   min="0" max="<?= $item['estoque'] ?>"
-                                   class="quantity-input">
-                        </td>
-                        <td>R$ <?= number_format($item['subtotal'], 2, ',', '.') ?></td>
-                        <td>
-                            <form method="post" action="cart.php" style="display:inline;">
-                                <input type="hidden" name="remove" value="<?= $item['id'] ?>">
-                                <button type="submit" class="btn btn-danger">Remover</button>
-                            </form>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+  <?php if (empty($items)): ?>
+    <p>O carrinho está vazio.</p>
+    <a href="index.php" class="btn btn-primary">Voltar às compras</a>
+  <?php else: ?>
 
-            <button type="submit" class="btn btn-primary">Atualizar Carrinho</button>
-        </form>
+    <form method="post" action="cart.php">
+      <input type="hidden" name="update" value="1">
+      <table>
+        <thead>
+          <tr>
+            <th>Imagem</th>
+            <th>Produto</th>
+            <th>Preço</th>
+            <th>Quantidade</th>
+            <th>Subtotal</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($items as $item): ?>
+          <tr>
+            <td><img src="<?= htmlspecialchars($item['imagem']) ?>" width="50" height="50"></td>
+            <td><?= htmlspecialchars($item['nome']) ?></td>
+            <td>R$ <?= number_format($item['preco'],2,',','.') ?></td>
+            <td>
+              <input type="number"
+                     name="quantities[<?= $item['id'] ?>]"
+                     value="<?= $item['quantidade'] ?>"
+                     min="0"
+                     max="<?= $item['estoque'] ?>"
+                     class="quantity-input">
+            </td>
+            <td>R$ <?= number_format($item['subtotal'],2,',','.') ?></td>
+            <td>
 
-        <div class="total">
-            Total: R$ <?= number_format($total, 2, ',', '.') ?>
-        </div>
+              <form method="post" action="cart.php" style="display:inline">
+                <input type="hidden" name="remove" value="<?= $item['id'] ?>">
+                <button type="submit" class="btn btn-danger">Remover</button>
+              </form>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Atualizar Carrinho</button>
+      </div>
+    </form>
 
-        <div class="actions">
-            <button class="btn btn-primary" onclick="window.location.href='checkout.php'">Finalizar Compra</button>
-        </div>
-    <?php endif; ?>
+    <div class="total">
+      Total: R$ <?= number_format($total,2,',','.') ?>
+    </div>
+    <div class="actions">
+      <button onclick="location.href='checkout.php'" class="btn btn-primary">
+        Finalizar Compra
+      </button>
+    </div>
+
+  <?php endif; ?>
 </body>
 </html>

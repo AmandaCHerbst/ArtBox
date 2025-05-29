@@ -2,7 +2,6 @@
 session_start();
 require __DIR__ . '/config/config.inc.php';
 
-
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -10,15 +9,22 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $usuario = $_POST['id']; 
-    $senha   = $_POST['senha'];
+$redirect = 'index.php';
+if (!empty($_GET['redirect']) && preg_match('/^[\w\-]+\.php$/', $_GET['redirect'])) {
+    $redirect = $_GET['redirect'];
+}
 
-    $stmt = $pdo->prepare(
-        "SELECT idUSUARIO, nomeUSUARIO, senha, tipo_usuario
-         FROM usuarios
-         WHERE usuario = :usuario"
-    );
+$errorMessage = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $usuario = $_POST['id']   ?? '';
+    $senha   = $_POST['senha'] ?? '';
+
+    $stmt = $pdo->prepare("
+        SELECT idUSUARIO, nomeUSUARIO, senha, tipo_usuario
+        FROM usuarios
+        WHERE usuario = :usuario
+    ");
     $stmt->execute([':usuario' => $usuario]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -27,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['nomeUSUARIO']  = $user['nomeUSUARIO'];
         $_SESSION['tipo_usuario'] = $user['tipo_usuario'];
 
-        header('Location: index.php');
+        header("Location: $redirect");
         exit;
     } else {
         $errorMessage = "Usuário ou senha inválidos.";
@@ -44,32 +50,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
   <div class="login-container">
-    <div class="login-header">
-      <h1>Entrar</h1>
-    </div>
+    <h1>Entrar</h1>
 
-    <?php if (!empty($errorMessage)): ?>
+    <?php if ($errorMessage): ?>
       <div class="error-msg"><?= htmlspecialchars($errorMessage) ?></div>
     <?php endif; ?>
 
-    <form class="login-form" action="" method="post">
+    <form action="login.php<?= !empty($_GET['redirect']) ? '?redirect=' . urlencode($_GET['redirect']) : '' ?>"
+          method="post" class="login-form">
       <div class="form-group">
         <label for="id">Usuário</label>
-        <input type="text" id="id" name="id" placeholder="Nome de usuário" required>
+        <input type="text" id="id" name="id" required>
       </div>
       <div class="form-group">
         <label for="senha">Senha</label>
-        <input type="password" id="senha" name="senha" placeholder="Senha" required>
+        <input type="password" id="senha" name="senha" required>
       </div>
       <button type="submit" class="btn-login">Entrar</button>
-      <button type="button" class="btn-cad" onclick="window.location.href='cadastro_usuario.php'">
+      <button type="button" class="btn-cad" onclick="location.href='cadastro_usuario.php'">
         Cadastrar-se
       </button>
     </form>
 
-    <div class="login-footer">
-      <p><a href="esqueci_senha.php">Esqueci minha senha</a></p>
-    </div>
+    <p><a href="esqueci_senha.php">Esqueci minha senha</a></p>
   </div>
 </body>
 </html>
