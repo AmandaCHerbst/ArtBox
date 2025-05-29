@@ -14,59 +14,45 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    isset($_POST['product_id'], $_POST['quantity']) &&
-    empty($_POST['quantities']) &&
-    !isset($_POST['remove'])
-) {
-    $productId = (int) $_POST['product_id'];
-    $qtyToAdd  = max(1, (int) $_POST['quantity']);
-
-    $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
-    $stmtStock->execute([$productId]);
-    $stock = (int) $stmtStock->fetchColumn();
-
-    $current = $_SESSION['cart'][$productId] ?? 0;
-    $_SESSION['cart'][$productId] = min($current + $qtyToAdd, $stock);
-
-    header('Location: cart.php');
-    exit;
-}
-
-if (
-    $_SERVER['REQUEST_METHOD'] === 'POST' &&
-    isset($_POST['update']) &&
-    isset($_POST['quantities']) &&
-    is_array($_POST['quantities'])
-) {
-    foreach ($_POST['quantities'] as $pid => $q) {
-        $pid     = (int)$pid;
-        $desired = max(0, (int)$q);
-
-        $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
-        $stmtStock->execute([$pid]);
-        $stock = (int) $stmtStock->fetchColumn();
-
-        if ($desired > 0) {
-            $_SESSION['cart'][$pid] = min($desired, $stock);
-        } else {
-            unset($_SESSION['cart'][$pid]);
-        }
-    }
-    header('Location: cart.php');
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove'])) {
-    $removeId = (int) $_POST['remove'];
-    unset($_SESSION['cart'][$removeId]);
-    header('Location: cart.php');
-    exit;
-}
-
 if (!isset($_SESSION['idUSUARIO'])) {
     header('Location: login.php?redirect=cart.php');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['remove'])) {
+        $removeId = (int)$_POST['remove'];
+        unset($_SESSION['cart'][$removeId]);
+    }
+    elseif (isset($_POST['update']) && isset($_POST['quantities']) && is_array($_POST['quantities'])) {
+        foreach ($_POST['quantities'] as $pid => $q) {
+            $pid     = (int)$pid;
+            $desired = max(0, (int)$q);
+
+            $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
+            $stmtStock->execute([$pid]);
+            $stock = (int)$stmtStock->fetchColumn();
+
+            if ($desired > 0) {
+                $_SESSION['cart'][$pid] = min($desired, $stock);
+            } else {
+                unset($_SESSION['cart'][$pid]);
+            }
+        }
+    }
+    elseif (isset($_POST['product_id'], $_POST['quantity'])) {
+        $productId = (int)$_POST['product_id'];
+        $qtyToAdd  = max(1, (int)$_POST['quantity']);
+
+        $stmtStock = $pdo->prepare("SELECT quantidade FROM produtos WHERE idPRODUTO = ?");
+        $stmtStock->execute([$productId]);
+        $stock = (int)$stmtStock->fetchColumn();
+
+        $current = $_SESSION['cart'][$productId] ?? 0;
+        $_SESSION['cart'][$productId] = min($current + $qtyToAdd, $stock);
+    }
+
+    header('Location: cart.php');
     exit;
 }
 
@@ -75,32 +61,30 @@ $total = 0;
 if (!empty($_SESSION['cart'])) {
     $ids = array_keys($_SESSION['cart']);
     $ph  = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare("
-        SELECT idPRODUTO AS id,
-               nomePRODUTO AS nome,
-               precoPRODUTO AS preco,
-               quantidade  AS estoque,
-               imagemPRODUTO AS imagem
-        FROM produtos
-        WHERE idPRODUTO IN ($ph)
-    ");
+    $stmt = $pdo->prepare(
+        "SELECT idPRODUTO AS id, nomePRODUTO AS nome, precoPRODUTO AS preco, quantidade AS estoque, imagemPRODUTO AS imagem
+         FROM produtos
+         WHERE idPRODUTO IN ($ph)"
+    );
     $stmt->execute($ids);
+
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $p) {
         $qtd  = $_SESSION['cart'][$p['id']];
         $sub  = $p['preco'] * $qtd;
         $total += $sub;
         $items[] = [
-            'id'         => $p['id'],
-            'nome'       => $p['nome'],
-            'preco'      => $p['preco'],
-            'estoque'    => $p['estoque'],
-            'imagem'     => $p['imagem'],
+            'id'        => $p['id'],
+            'nome'      => $p['nome'],
+            'preco'     => $p['preco'],
+            'estoque'   => $p['estoque'],
+            'imagem'    => $p['imagem'],
             'quantidade'=> $qtd,
-            'subtotal'   => $sub,
+            'subtotal'  => $sub,
         ];
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -115,6 +99,7 @@ if (!empty($_SESSION['cart'])) {
     .btn-primary { background:#007bff; color:#fff; }
     .actions { text-align:right; margin-top:10px; }
     .total { text-align:right; font-size:1.2rem; margin-top:10px; }
+    .checkout-link { text-decoration:none; }
   </style>
 </head>
 <body>
@@ -154,11 +139,12 @@ if (!empty($_SESSION['cart'])) {
             </td>
             <td>R$ <?= number_format($item['subtotal'],2,',','.') ?></td>
             <td>
-
-              <form method="post" action="cart.php" style="display:inline">
-                <input type="hidden" name="remove" value="<?= $item['id'] ?>">
-                <button type="submit" class="btn btn-danger">Remover</button>
-              </form>
+              <button type="submit"
+                      name="remove"
+                      value="<?= $item['id'] ?>"
+                      class="btn btn-danger">
+                Remover
+              </button>
             </td>
           </tr>
           <?php endforeach; ?>
@@ -173,9 +159,7 @@ if (!empty($_SESSION['cart'])) {
       Total: R$ <?= number_format($total,2,',','.') ?>
     </div>
     <div class="actions">
-      <button onclick="location.href='checkout.php'" class="btn btn-primary">
-        Finalizar Compra
-      </button>
+      <a href="checkout.php" class="btn btn-primary checkout-link">Finalizar Compra</a>
     </div>
 
   <?php endif; ?>
