@@ -1,17 +1,17 @@
 <?php
 class Produto {
-    /** @var PDO Conexão PDO com o banco */
+    /** @var PDO  */
     private $pdo;
 
     /**
-     * @param PDO $pdo
+     * @param PDO 
      */
     public function __construct(PDO $pdo) {
         $this->pdo = $pdo;
     }
     /**
-     * @param int $id
-     * @return array|false Retorna array associativo do produto ou false se não encontrar
+     * @param int 
+     * @return array|false 
      */
     public function buscarPorId(int $id) {
         $sql = "
@@ -29,7 +29,7 @@ class Produto {
     }
 
     /**
-     * @return array Lista de arrays associativos de produtos
+     * @return array 
      */
     public function listar(): array {
         $sql = "SELECT * FROM produtos";
@@ -38,8 +38,8 @@ class Produto {
     }
 
     /**
-     * @param array $dados Assoc. com chaves: nome, descricao, tamanhos, cores, preco, quantidade, imagem, id_artesao
-     * @return int ID do produto inserido
+     * @param array 
+     * @return int 
      */
     public function inserir(array $dados): int {
         $sql = "
@@ -65,8 +65,8 @@ class Produto {
 
     /**
      * @param int $id
-     * @param array $dados Mesmas chaves que inserir()
-     * @return bool True se alterou pelo menos uma linha
+     * @param array 
+     * @return bool 
      */
     public function alterar(int $id, array $dados): bool {
         $sql = "
