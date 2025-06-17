@@ -3,13 +3,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 ?>
-<style>
-  .navbar { display: flex; align-items: center; justify-content: space-between; background: #333; color: #fff; padding: 10px 20px; }
-  .navbar .logo { font-size: 1.5rem; font-weight: bold; text-decoration: none; color: #fff; }
-  .navbar .search { flex: 1; margin: 0 20px; }
-  .navbar .search input { width: 100%; padding: 5px 10px; border-radius: 4px; border: none; }
-  .navbar .icons a { margin-left: 15px; text-decoration: none; color: #fff; font-size: 1.2rem; }
-</style>
+<head>
+  <link rel="stylesheet" href="assets/css/menu.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
 <nav class="navbar">
   <a href="index.php" class="logo">ARTBOX</a>
   <div class="search">
@@ -24,15 +21,12 @@ if (session_status() === PHP_SESSION_NONE) {
              ? 'perfil_artesao.php'
              : 'perfil_normal.php';
       ?>">
-        <span>&#128100;</span>
-      </a>
-      <a href="logout.php">
-        <span>&#128682;</span>
+       <span class="material-icons" aria-hidden="true">account_circle</span>
       </a>
     <?php else: ?>
-      <a href="login.php"><span>&#128100;</span></a>
+      <a href="login.php"><span class="material-icons" aria-hidden="true">account_circle</span></a>
     <?php endif; ?>
-    <a href="cart.php"><span>&#128722;</span></a>
+    <a href="cart.php"><span class="material-icons" aria-hidden="true">shopping_cart</span></span></a>
   </div>
 </nav>
 
