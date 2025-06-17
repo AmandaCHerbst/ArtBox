@@ -51,17 +51,7 @@ if ($busca !== '') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loja ARTBOX</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .product-card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
-        .product-card img { width: 100%; object-fit: cover; aspect-ratio: 1/1; }
-        .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .product-title { font-size: 1.1rem; margin: 0 0 10px; }
-        .product-price { font-weight: bold; margin: 0 0 10px; }
-        .add-cart-btn { padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .add-cart-btn:hover { background: #218838; }
-    </style>
+    <link rel="stylesheet" href="assets/css/index.css">
 </head>
 <body>
     <h1><?= $busca ? "Resultados para: '" . htmlspecialchars($busca) . "'" : "Recomendados" ?></h1>
