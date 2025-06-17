@@ -11,9 +11,40 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-$produtoObj = new Produto($pdo);
-$produtos   = $produtoObj->listar();
+// Lógica de busca
+$busca = isset($_GET['q']) ? trim($_GET['q']) : '';
+$produtos = [];
+
+if ($busca !== '') {
+    $palavras = preg_split('/\s+/', $busca);
+    $likeClauses = [];
+    $params = [];
+
+    foreach ($palavras as $index => $palavra) {
+        $likeClauses[] = "(
+            nomePRODUTO LIKE :termo$index OR
+            descricaoPRODUTO LIKE :termo$index OR
+            tamanhos_disponiveis LIKE :termo$index OR
+            cores_disponiveis LIKE :termo$index OR
+            EXISTS (
+                SELECT 1 FROM produto_categorias pc
+                JOIN categorias c ON pc.id_categoria = c.idCATEGORIA
+                WHERE pc.id_produto = p.idPRODUTO AND c.nomeCATEGORIA LIKE :termo$index
+            )
+        )";
+        $params[":termo$index"] = "%$palavra%";
+    }
+
+    $sql = "SELECT DISTINCT p.* FROM produtos p WHERE " . implode(" AND ", $likeClauses);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $produtoObj = new Produto($pdo);
+    $produtos = $produtoObj->listar();
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -33,13 +64,16 @@ $produtos   = $produtoObj->listar();
     </style>
 </head>
 <body>
-    <h1>Recomendados</h1>
+    <h1><?= $busca ? "Resultados para: '" . htmlspecialchars($busca) . "'" : "Recomendados" ?></h1>
     <div class="grid">
+        <?php if (count($produtos) === 0): ?>
+            <p>Nenhum produto encontrado.</p>
+        <?php endif; ?>
+
         <?php foreach ($produtos as $p): ?>
             <div class="product-card">
                 <?php if (!empty($p['imagemPRODUTO'])): ?>
-                    <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>"
-                         alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
+                    <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
                 <?php else: ?>
                     <div style="padding:50px; text-align:center;">Sem imagem</div>
                 <?php endif; ?>
@@ -57,9 +91,7 @@ $produtos   = $produtoObj->listar();
                     <form action="cart.php" method="post">
                         <input type="hidden" name="product_id" value="<?= $p['idPRODUTO'] ?>">
                         <input type="hidden" name="quantity" value="1">
-                        <button type="submit" class="add-cart-btn">
-                          Adicionar ao carrinho
-                        </button>
+                        <button type="submit" class="add-cart-btn">Adicionar ao carrinho</button>
                     </form>
                 </div>
             </div>
