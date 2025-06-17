@@ -18,22 +18,11 @@ create table if not exists usuarios (
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-
 create table if not exists categorias (
     idCATEGORIA INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     nomeCATEGORIA VARCHAR(100) NOT NULL UNIQUE,
     descricao TEXT
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
-CREATE TABLE IF NOT EXISTS produto_categorias (
-  idProdutoCategoria INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  id_produto          INT UNSIGNED NOT NULL,
-  id_categoria        INT UNSIGNED NOT NULL,
-  FOREIGN KEY (id_produto)   REFERENCES produtos(idPRODUTO)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  FOREIGN KEY (id_categoria) REFERENCES categorias(idCATEGORIA)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS produtos (
     idPRODUTO INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -51,6 +40,27 @@ CREATE TABLE IF NOT EXISTS produtos (
         ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (id_artesao) REFERENCES usuarios(idUSUARIO)
         ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS produto_categorias (
+  idProdutoCategoria INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_produto          INT UNSIGNED NOT NULL,
+  id_categoria        INT UNSIGNED NOT NULL,
+  FOREIGN KEY (id_produto)   REFERENCES produtos(idPRODUTO)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (id_categoria) REFERENCES categorias(idCATEGORIA)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS variantes (
+  idVARIANTE INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_produto INT UNSIGNED NOT NULL,
+  cor VARCHAR(50) NOT NULL,
+  tamanho VARCHAR(10) NOT NULL,
+  estoque INT UNSIGNED NOT NULL DEFAULT 0,
+  FOREIGN KEY (id_produto) REFERENCES produtos(idPRODUTO)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE KEY uq_variante (id_produto, cor, tamanho)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 create table if not exists pedidos (
@@ -77,5 +87,3 @@ create table if not exists itens_pedido (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
---Tá funfando?
