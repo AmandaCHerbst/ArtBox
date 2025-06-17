@@ -80,7 +80,7 @@ class Usuarios {
         $comando->bindValue(':id', $this->getId());
         return $comando->execute();
     }
-    // ===== Setters =====
+    
     public function setId($id) {
         if ($id < 0) throw new Exception("ID inválido");
         $this->id = $id;

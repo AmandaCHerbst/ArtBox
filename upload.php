@@ -10,18 +10,15 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// Validação upload de imagem
 if (!isset($_FILES['product-image']) || $_FILES['product-image']['error'] !== UPLOAD_ERR_OK) {
     die("Erro no upload da imagem.");
 }
-
 $allowed = ['jpg','jpeg','png','gif'];
 $ext = strtolower(pathinfo($_FILES['product-image']['name'], PATHINFO_EXTENSION));
 if (!in_array($ext, $allowed)) {
     die("Tipo de arquivo não permitido.");
 }
 
-// Movendo arquivo
 $newName = uniqid('prod_', true) . "." . $ext;
 $dest    = __DIR__ . "/uploads/" . $newName;
 if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $dest)) {
@@ -29,13 +26,13 @@ if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $dest)) {
 }
 $imgPath = "uploads/" . $newName;
 
-// Checagem de sessão de artesão
+
 if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
     die("Acesso negado.");
 }
 $idArt = $_SESSION['idUSUARIO'];
 
-// Captura dos dados do formulário
+
 $nome        = trim($_POST['product-name'] ?? '');
 $descricao   = trim($_POST['product-description'] ?? '');
 $sizesArr    = $_POST['sizes'] ?? [];
@@ -44,7 +41,6 @@ $cores       = trim($_POST['color'] ?? '');
 $quant       = (int) ($_POST['quantity'] ?? 0);
 $price       = (float) ($_POST['price'] ?? 0);
 
-// Insere usando Produto.class.php
 $produtoObj = new Produto($pdo);
 $idProd     = $produtoObj->inserir([
     'nome'       => $nome,
@@ -57,7 +53,6 @@ $idProd     = $produtoObj->inserir([
     'id_artesao' => $idArt
 ]);
 
-// Relação categorias (existentes e novas)
 $catIds = $_POST['categories'] ?? [];
 if (!empty($_POST['new_categories'])) {
     $novas = array_filter(array_map('trim', explode(',', $_POST['new_categories'])));
@@ -83,6 +78,5 @@ if (!empty($catIds)) {
     }
 }
 
-// Redireciona com sucesso
 header('Location: index.php?msg=Produto+cadastro+com+sucesso');
 exit;
