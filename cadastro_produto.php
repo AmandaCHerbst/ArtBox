@@ -6,14 +6,8 @@ try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Erro ao conectar ao banco: " . $e->getMessage());
+    die("Erro ao conectar: " . $e->getMessage());
 }
-
-if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
-    header('Location: login.php');
-    exit;
-}
-
 $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
             ->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -28,11 +22,9 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
 <body>
 
   <div class="product-form-container">
-    <div class="product-form-header">
-      <h1>Cadastro de Produto</h1>
-    </div>
+    <h1>Cadastro de Produto</h1>
 
-    <form action="upload.php" method="post" enctype="multipart/form-data">
+    <form id="product-form" action="upload.php" method="post" enctype="multipart/form-data">
 
       <div class="product-form-group">
         <label for="upload-image">Imagem do Produto</label>
@@ -54,18 +46,6 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
       </div>
 
       <div class="product-form-group">
-        <label>Tamanhos Disponíveis</label>
-        <div class="options-inline">
-          <?php $sizes = ['Único','PP','P','M','G','GG','XG','XGG']; ?>
-          <?php foreach($sizes as $s): ?>
-            <label>
-              <input type="checkbox" name="sizes[]" value="<?= $s ?>"> <?= $s ?>
-            </label>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <div class="product-form-group">
         <label>Categorias</label>
         <div class="options-inline">
           <?php foreach($cats as $c): ?>
@@ -83,35 +63,88 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
       </div>
 
       <div class="product-form-group">
-        <label for="color">Cores Disponíveis</label>
+        <label for="price">Preço</label>
+        <div class="price-input">
+          <span>R$</span>
+          <input type="number" id="price" name="price" placeholder="00,00" step="0.01" required>
+        </div>
+      </div>
+
+      <div class="product-form-group">
+        <label>Tamanhos Disponíveis</label>
+        <div class="options-inline">
+          <?php $sizes = ['Único','PP','P','M','G','GG','XG','XGG']; ?>
+          <?php foreach($sizes as $s): ?>
+            <label>
+              <input type="checkbox" name="sizes[]" value="<?= $s ?>"> <?= $s ?>
+            </label>
+          <?php endforeach; ?>
+        </div>
+      </div>
+
+      <div class="product-form-group">
+        <label for="color">Cores Disponíveis <small>(separadas por vírgula)</small></label>
         <input type="text" id="color" name="color" placeholder="ex: vermelho, azul" required>
       </div>
 
       <div class="product-form-group">
-        <label for="quantity">Quantidade Disponível</label>
-        <select id="quantity" name="quantity" required>
-          <option value="">Selecione...</option>
-          <?php for($i=1; $i<=10; $i++): ?>
-            <option value="<?= $i ?>"><?= $i ?></option>
-          <?php endfor; ?>
-        </select>
+        <button id="generate-variants">Gerar Estoques por Variante</button>
       </div>
 
-      <div class="product-form-group">
-        <label>Preço</label>
-        <div class="price-input">
-          <span>R$</span>
-          <input type="number" name="price" placeholder="00,00" step="0.01" required>
-        </div>
-      </div>
+      <div id="variant-stocks"></div>
 
       <button type="submit" class="btn-submit-product">Cadastrar Produto</button>
-
     </form>
-    <div class="produto-footer">
-      <p><a href="index.php">Voltar ao Início</a></p>
-    </div>
   </div>
 
+  <script>
+    document.getElementById('generate-variants').addEventListener('click', function(e) {
+      e.preventDefault();
+      const sizes = Array.from(document.querySelectorAll('input[name="sizes[]"]:checked'))
+                         .map(cb => cb.value.trim())
+                         .filter(v => v);
+      const colors = document.getElementById('color').value
+                         .split(',')
+                         .map(c => c.trim())
+                         .filter(v => v);
+
+      const container = document.getElementById('variant-stocks');
+      container.innerHTML = '';
+
+      if (sizes.length === 0 || colors.length === 0) {
+        container.innerHTML = '<p style="color:red;">Selecione pelo menos um tamanho e informe ao menos uma cor.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      table.innerHTML = `
+        <tr>
+          <th style="border:1px solid #ddd;padding:5px;">Tamanho</th>
+          <th style="border:1px solid #ddd;padding:5px;">Cor</th>
+          <th style="border:1px solid #ddd;padding:5px;">Estoque</th>
+        </tr>
+      `;
+      sizes.forEach(tam => {
+        colors.forEach(cor => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td style="border:1px solid #ddd;padding:5px;">${tam}</td>
+            <td style="border:1px solid #ddd;padding:5px;">${cor}</td>
+            <td style="border:1px solid #ddd;padding:5px;">
+              <input type="number"
+                     name="stocks[${tam}][${cor}]"
+                     min="0"
+                     value="0"
+                     required
+                     style="width:60px;">
+            </td>
+          `;
+          table.appendChild(row);
+        });
+      });
+      container.appendChild(table);
+    });
+  </script>
 </body>
 </html>
