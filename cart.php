@@ -90,17 +90,7 @@ if (!empty($_SESSION['cart'])) {
 <head>
   <meta charset="UTF-8">
   <title>Carrinho</title>
-  <style>
-    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
-    .quantity-input { width:60px; }
-    .btn { padding:8px 12px; border:none; border-radius:4px; cursor:pointer; }
-    .btn-danger { background:#dc3545; color:#fff; }
-    .btn-primary { background:#007bff; color:#fff; }
-    .actions { text-align:right; margin-top:10px; }
-    .total { text-align:right; font-size:1.2rem; margin-top:10px; }
-    .checkout-link { text-decoration:none; }
-  </style>
+  <link rel="stylesheet" href="assets/css/cart.css">
 </head>
 <body>
   <h1>Seu Carrinho</h1>

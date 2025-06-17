@@ -1,0 +1,8 @@
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        form { max-width: 500px; margin: 0 auto; }
+        label { display: block; margin-top: 10px; }
+        input { width: 100%; padding: 8px; margin-top: 5px; }
+        .btn { margin-top: 20px; padding: 10px 15px; background-color: #28a745; color: white; border: none; cursor: pointer; }
+        .btn:hover { background-color: #218838; }
+        .success-message { text-align: center; padding: 30px; background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .back-link { display: block; text-align: center; margin-top: 20px; }
