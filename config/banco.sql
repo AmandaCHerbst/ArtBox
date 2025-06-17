@@ -77,3 +77,5 @@ create table if not exists itens_pedido (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+--Tá funfando?
