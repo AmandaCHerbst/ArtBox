@@ -10,24 +10,37 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-
 $busca = isset($_GET['q']) ? trim($_GET['q']) : '';
 $params = [];
 if ($busca !== '') {
     $palavras = preg_split('/\s+/', $busca);
     $clauses = [];
     foreach ($palavras as $i => $palavra) {
-        $clauses[] = "(nomePRODUTO LIKE :t$i OR descricaoPRODUTO LIKE :t$i OR cores_disponiveis LIKE :t$i)";
+        $clauses[] = "(
+            p.nomePRODUTO LIKE :t$i 
+            OR p.descricaoPRODUTO LIKE :t$i 
+            OR p.cores_disponiveis LIKE :t$i
+            OR c.nomeCATEGORIA LIKE :t$i
+            OR c2.nomeCATEGORIA LIKE :t$i
+            OR EXISTS (
+                SELECT 1 FROM variantes v 
+                WHERE v.id_produto = p.idPRODUTO AND v.cor LIKE :t$i
+            )
+        )";
         $params[":t$i"] = "%$palavra%";
     }
-    $sql = "SELECT * FROM produtos WHERE " . implode(' AND ', $clauses);
+    $sql = "SELECT DISTINCT p.* FROM produtos p 
+            LEFT JOIN categorias c ON p.id_categoria = c.idCATEGORIA
+            LEFT JOIN produto_categorias pc ON pc.id_produto = p.idPRODUTO
+            LEFT JOIN categorias c2 ON c2.idCATEGORIA = pc.id_categoria
+            WHERE " . implode(' AND ', $clauses);
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
     $stmt = $pdo->query("SELECT * FROM produtos");
     $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} 
+}
 
 $variantsData = [];
 foreach ($produtos as $p) {
@@ -43,6 +56,7 @@ foreach ($produtos as $p) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loja ARTBOX</title>
     <link rel="stylesheet" href="assets/css/index.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
     <h1><?= $busca ? "Resultados para '".htmlspecialchars($busca)."'" : 'Recomendados' ?></h1>
@@ -66,7 +80,6 @@ foreach ($produtos as $p) {
           </div>
         <?php endforeach; ?>
     </div>
-
     <div id="cart-modal" class="modal">
       <div class="modal-content">
         <h3>Adicionar ao Carrinho</h3>
@@ -79,7 +92,7 @@ foreach ($produtos as $p) {
             <select id="modal-cor" name="cor" required></select>
           </label>
           <p id="modal-stock">Estoque: -</p>
-          <label>Qtd:
+          <label>Quantidade:
             <input type="number" name="quantity" id="modal-quantity" min="1" value="1" required>
           </label>
           <button type="submit" class="btn-primary">Adicionar</button>
