@@ -3,35 +3,62 @@ require 'config/config.inc.php';
 
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
+$msg = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_id'])) {
     $delId = (int) $_POST['delete_id'];
-    $stmtDel = $pdo->prepare("DELETE FROM produtos WHERE idPRODUTO = :id");
-    $stmtDel->execute([':id' => $delId]);
-    header("Location: excluir.php");
-    exit;
+
+    $stmtImg = $pdo->prepare("SELECT imagemPRODUTO FROM produtos WHERE idPRODUTO = :id");
+    $stmtImg->execute([':id' => $delId]);
+    $imgRow = $stmtImg->fetch(PDO::FETCH_ASSOC);
+
+    $pdo->beginTransaction();
+    try {
+        $stmtVar = $pdo->prepare("DELETE FROM variantes WHERE id_produto = :id");
+        $stmtVar->execute([':id' => $delId]);
+
+        $stmtCat = $pdo->prepare("DELETE FROM produto_categorias WHERE id_produto = :id");
+        $stmtCat->execute([':id' => $delId]);
+
+        $stmtDel = $pdo->prepare("DELETE FROM produtos WHERE idPRODUTO = :id");
+        $stmtDel->execute([':id' => $delId]);
+
+        if ($imgRow && !empty($imgRow['imagemPRODUTO'])) {
+            $caminhoImagem = __DIR__ . '/' . $imgRow['imagemPRODUTO'];
+            if (file_exists($caminhoImagem)) {
+                unlink($caminhoImagem);
+            }
+        }
+
+        $pdo->commit();
+        $msg = "Produto excluído com sucesso.";
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $msg = "Erro ao excluir produto: " . $e->getMessage();
+    }
 }
 
 $stmt = $pdo->query("SELECT idPRODUTO, nomePRODUTO, precoPRODUTO, quantidade FROM produtos ORDER BY data_cadastro DESC");
 $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excluir Produtos - ARTBOX</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
         table { border-collapse: collapse; width: 100%; }
         th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
         th { background-color: #f4f4f4; }
-        form { margin: 0; }
         .btn-delete {
-            padding: 4px 8px;
+            padding: 5px 10px;
             background: #dc3545;
             color: white;
             border: none;
@@ -39,10 +66,16 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             cursor: pointer;
         }
         .btn-delete:hover { background: #c82333; }
+        .mensagem { margin-bottom: 15px; padding: 10px; background: #e0ffe0; color: #2e7d32; border-left: 5px solid #43a047; }
     </style>
 </head>
 <body>
     <h1>Excluir Produtos</h1>
+
+    <?php if ($msg): ?>
+        <div class="mensagem"><?= htmlspecialchars($msg) ?></div>
+    <?php endif; ?>
+
     <?php if (empty($produtos)): ?>
         <p>Nenhum produto cadastrado.</p>
     <?php else: ?>
@@ -64,7 +97,7 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <td><?= number_format($p['precoPRODUTO'], 2, ',', '.') ?></td>
                         <td><?= htmlspecialchars($p['quantidade']) ?></td>
                         <td>
-                            <form method="post" onsubmit="return confirm('Confirma exclusão do produto <?= addslashes($p['nomePRODUTO']) ?>?');">
+                            <form method="post" onsubmit="return confirm('Confirma exclusão de <?= addslashes($p['nomePRODUTO']) ?>?');">
                                 <input type="hidden" name="delete_id" value="<?= $p['idPRODUTO'] ?>">
                                 <button type="submit" class="btn-delete">Excluir</button>
                             </form>

@@ -10,7 +10,7 @@ if (session_status() === PHP_SESSION_NONE) {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(186, 101, 61, 0.7);
       color: #fff;
       padding: 10px 20px;
       flex-wrap: wrap;
@@ -64,6 +64,10 @@ if (session_status() === PHP_SESSION_NONE) {
       text-decoration: none;
       color: #fff;
       font-size: 2.4rem;
+    }
+    .navbar .material-icons {
+      font-size: 40px;
+      color: #000000;
     }
   </style>
 </head>
