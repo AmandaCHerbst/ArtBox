@@ -20,31 +20,28 @@ $sqlTopCats = "
   LIMIT 3";
 $topCats = $pdo->query($sqlTopCats)->fetchAll(PDO::FETCH_ASSOC);
 
-// 2. Para cada categoria, buscar produtos
+// 2. Para cada categoria, buscar produtos e variantes
 $produtosPorCategoria = [];
 foreach ($topCats as $cat) {
     $stmtP = $pdo->prepare(
-      "SELECT p.* 
-         FROM produtos p
+      "SELECT p.* FROM produtos p
          JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
          WHERE pc.id_categoria = :cat
-         LIMIT 10"
+         LIMIT 20"
     );
     $stmtP->execute([':cat' => $cat['idCATEGORIA']]);
-    $produtosPorCategoria[$cat['nomeCATEGORIA']] = $stmtP->fetchAll(PDO::FETCH_ASSOC);
+    $items = $stmtP->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($items as &$p) {
+        $stmtVar = $pdo->prepare("SELECT idVARIANTE, tamanho, cor, estoque FROM variantes WHERE id_produto = ?");
+        $stmtVar->execute([$p['idPRODUTO']]);
+        $p['variantes'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
+    }
+    $produtosPorCategoria[$cat['nomeCATEGORIA']] = $items;
 }
 
-// 3. Carregar busca geral para sessão "Recomendados"
-$busca = isset($_GET['q']) ? trim($_GET['q']) : '';
-$params = [];
-if ($busca !== '') {
-    // ... mantêm sua lógica de busca existente ...
-    $stmt = $pdo->prepare("SELECT * FROM produtos WHERE nomePRODUTO LIKE :q");
-    $stmt->execute([':q' => "%$busca%"]);
-    $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $produtos = [];
-}
+// 3. Buscar todos produtos aleatoriamente
+$stmtAll = $pdo->query("SELECT p.*, (SELECT GROUP_CONCAT(tamanho,':',cor) FROM variantes v WHERE v.id_produto=p.idPRODUTO) AS variantes_raw FROM produtos p ORDER BY RAND()");
+$allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -62,16 +59,16 @@ if ($busca !== '') {
       <h2><?= htmlspecialchars($catName) ?></h2>
       <div class="cat-row">
         <?php foreach ($items as $p): ?>
-          <div class="product-card">
+          <div class="product-card" data-variantes='<?= json_encode($p['variantes'], JSON_HEX_TAG) ?>'>
             <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
-              <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="">
+              <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
             </a>
             <div class="card-body">
-                  <h3 class="product-title">
-                      <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>"><?= htmlspecialchars($p['nomePRODUTO']) ?></a>
-                  </h3>
-                      <p class="product-price">R$ <?= number_format($p['precoPRODUTO'], 2, ',', '.') ?></p>
-                  <button class="add-cart-btn" data-id="<?= $p['idPRODUTO'] ?>" data-nome="<?= htmlspecialchars($p['nomePRODUTO']) ?>">Adicionar ao Carrinho</button>
+              <h3 class="product-title">
+                <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>"><?= htmlspecialchars($p['nomePRODUTO']) ?></a>
+              </h3>
+              <p class="product-price">R$ <?= number_format($p['precoPRODUTO'],2,',','.') ?></p>
+              <button class="add-cart-btn" data-id="<?= $p['idPRODUTO'] ?>" data-nome="<?= htmlspecialchars($p['nomePRODUTO']) ?>">Adicionar ao Carrinho</button>
             </div>
           </div>
         <?php endforeach; ?>
@@ -79,71 +76,94 @@ if ($busca !== '') {
     </section>
   <?php endforeach; ?>
 
-  <!-- Recomendados ou busca geral -->
-  <?php if ($busca): ?>
-    <h1>Resultados para '<?= htmlspecialchars($busca) ?>'</h1>
+  <!-- Todos os produtos abaixo -->
+  <section class="all-products">
+    <h2>Todos os Produtos</h2>
     <div class="grid">
-      <?php foreach ($produtos as $p): ?>
+      <?php foreach ($allProducts as $p): ?>
         <div class="product-card">
           <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
-            <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="">
+            <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
           </a>
           <div class="card-body">
-            <h3><a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>"><?= htmlspecialchars($p['nomePRODUTO']) ?></a></h3>
-            <p>R$ <?= number_format($p['precoPRODUTO'],2,',','.') ?></p>
+            <h3 class="product-title">
+              <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>"><?= htmlspecialchars($p['nomePRODUTO']) ?></a>
+            </h3>
+            <p class="product-price">R$ <?= number_format($p['precoPRODUTO'],2,',','.') ?></p>
+            <button class="add-cart-btn" data-id="<?= $p['idPRODUTO'] ?>" data-nome="<?= htmlspecialchars($p['nomePRODUTO']) ?>">Adicionar ao Carrinho</button>
           </div>
         </div>
       <?php endforeach; ?>
     </div>
-  <?php endif; ?>
+  </section>
+
   <!-- Modal de seleção -->
-<div class="modal" id="modal-selecao">
-  <div class="modal-content">
-    <h3 id="modal-nome-produto">Produto</h3>
-    <form action="carrinho_adicionar.php" method="post">
-      <input type="hidden" name="id_produto" id="modal-id-produto">
-      
-      <label for="tamanho">Tamanho:</label>
-      <select name="tamanho" id="modal-tamanho" required>
-        <option value="">Selecione</option>
-        <option value="P">P</option>
-        <option value="M">M</option>
-        <option value="G">G</option>
-      </select>
-
-      <label for="cor">Cor:</label>
-      <select name="cor" id="modal-cor" required>
-        <option value="">Selecione</option>
-        <option value="Vermelho">Vermelho</option>
-        <option value="Preto">Preto</option>
-        <option value="Azul">Azul</option>
-      </select>
-
-      <label for="quantidade">Quantidade:</label>
-      <input type="number" name="quantidade" id="modal-quantidade" value="1" min="1" required>
-
-      <button type="submit" class="btn-primary">Adicionar</button>
-      <button type="button" id="modal-close">Cancelar</button>
-    </form>
+  <div class="modal" id="modal-selecao">
+    <div class="modal-content">
+      <h3 id="modal-nome-produto">Produto</h3>
+      <input type="hidden" id="modal-id-produto">
+      <label for="modal-tamanho">Tamanho:</label>
+      <select id="modal-tamanho" required><option value="">Selecione</option></select>
+      <label for="modal-cor">Cor:</label>
+      <select id="modal-cor" required><option value="">Selecione</option></select>
+      <p id="modal-stock">Estoque: -</p>
+      <label for="modal-quantidade">Quantidade:</label>
+      <input type="number" id="modal-quantidade" value="1" min="1" required>
+      <button id="modal-add" class="btn-primary">Adicionar</button>
+      <button id="modal-close" class="btn-secondary">Cancelar</button>
+    </div>
   </div>
-</div>
-<script>
-document.querySelectorAll('.add-cart-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.dataset.id;
-    const nome = btn.dataset.nome;
 
-    document.getElementById('modal-id-produto').value = id;
-    document.getElementById('modal-nome-produto').innerText = nome;
+  <script>
+  const modal = document.getElementById('modal-selecao');
+  const selTam = document.getElementById('modal-tamanho');
+  const selCor = document.getElementById('modal-cor');
+  const stockInfo = document.getElementById('modal-stock');
+  const inputQty = document.getElementById('modal-quantidade');
+  let currentVars = [];
 
-    document.getElementById('modal-selecao').style.display = 'flex';
+  document.querySelectorAll('.add-cart-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.product-card');
+      currentVars = JSON.parse(card.dataset.variantes || '[]');
+      document.getElementById('modal-nome-produto').innerText = btn.dataset.nome;
+      document.getElementById('modal-id-produto').value = btn.dataset.id;
+      const sizes = [...new Set(currentVars.map(v=>v.tamanho))];
+      selTam.innerHTML = '<option value="">Selecione</option>' + sizes.map(s=>`<option>${s}</option>`).join('');
+      selCor.innerHTML = '<option value="">Selecione</option>';
+      stockInfo.textContent = 'Estoque: -';
+      inputQty.value = 1;
+      modal.style.display = 'flex';
+    });
   });
-});
 
-document.getElementById('modal-close').addEventListener('click', () => {
-  document.getElementById('modal-selecao').style.display = 'none';
-});
-</script>
+  selTam.addEventListener('change', ()=>{
+    const size = selTam.value;
+    const colors = [...new Set(currentVars.filter(v=>v.tamanho===size).map(v=>v.cor))];
+    selCor.innerHTML = '<option value="">Selecione</option>' + colors.map(c=>`<option>${c}</option>`).join('');
+    stockInfo.textContent = 'Estoque: -';
+  });
+  selCor.addEventListener('change', ()=>{
+    const size = selTam.value, cor = selCor.value;
+    const v = currentVars.find(v=>v.tamanho===size && v.cor===cor) || {};
+    const st = v.estoque||0;
+    stockInfo.textContent = 'Estoque: '+st;
+    inputQty.max = st;
+    inputQty.value = st>0?1:0;
+  });
+
+  document.getElementById('modal-close').addEventListener('click', ()=> modal.style.display='none');
+  document.getElementById('modal-add').addEventListener('click', ()=>{
+    const idVar = currentVars.find(v=>v.tamanho===selTam.value && v.cor===selCor.value)?.idVARIANTE;
+    const qty = inputQty.value;
+    const form = document.createElement('form');
+    form.method='post'; form.action='cart.php';
+    form.innerHTML = `<input type="hidden" name="variant_id" value="${idVar}">`+
+                     `<input type="hidden" name="quantity" value="${qty}">`;
+    document.body.appendChild(form);
+    form.submit();
+  });
+  </script>
 
 </body>
 </html>
