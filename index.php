@@ -40,8 +40,14 @@ foreach ($topCats as $cat) {
 }
 
 // 3. Buscar todos produtos aleatoriamente
-$stmtAll = $pdo->query("SELECT p.*, (SELECT GROUP_CONCAT(tamanho,':',cor) FROM variantes v WHERE v.id_produto=p.idPRODUTO) AS variantes_raw FROM produtos p ORDER BY RAND()");
+$stmtAll = $pdo->query("SELECT * FROM produtos p ORDER BY RAND()");
 $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+foreach ($allProducts as &$p) {
+    $stmtVar = $pdo->prepare("SELECT idVARIANTE, tamanho, cor, estoque FROM variantes WHERE id_produto = ?");
+    $stmtVar->execute([$p['idPRODUTO']]);
+    $p['variantes'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
+}
+unset($p);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -52,8 +58,6 @@ $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
   <link rel="stylesheet" href="assets/css/index.css">
 </head>
 <body>
-
-  <!-- Seções por categoria -->
   <?php foreach ($produtosPorCategoria as $catName => $items): ?>
     <section class="cat-section">
       <h2><?= htmlspecialchars($catName) ?></h2>
@@ -76,12 +80,11 @@ $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
     </section>
   <?php endforeach; ?>
 
-  <!-- Todos os produtos abaixo -->
   <section class="all-products">
     <h2>Todos os Produtos</h2>
     <div class="grid">
       <?php foreach ($allProducts as $p): ?>
-        <div class="product-card">
+        <div class="product-card" data-variantes='<?= json_encode($p['variantes'], JSON_HEX_TAG) ?>'>
           <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
             <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
           </a>
@@ -97,7 +100,6 @@ $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
     </div>
   </section>
 
-  <!-- Modal de seleção -->
   <div class="modal" id="modal-selecao">
     <div class="modal-content">
       <h3 id="modal-nome-produto">Produto</h3>
@@ -143,6 +145,7 @@ $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
     selCor.innerHTML = '<option value="">Selecione</option>' + colors.map(c=>`<option>${c}</option>`).join('');
     stockInfo.textContent = 'Estoque: -';
   });
+
   selCor.addEventListener('change', ()=>{
     const size = selTam.value, cor = selCor.value;
     const v = currentVars.find(v=>v.tamanho===size && v.cor===cor) || {};
@@ -153,6 +156,7 @@ $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
   });
 
   document.getElementById('modal-close').addEventListener('click', ()=> modal.style.display='none');
+
   document.getElementById('modal-add').addEventListener('click', ()=>{
     const idVar = currentVars.find(v=>v.tamanho===selTam.value && v.cor===selCor.value)?.idVARIANTE;
     const qty = inputQty.value;
@@ -164,6 +168,5 @@ $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
     form.submit();
   });
   </script>
-
 </body>
 </html>

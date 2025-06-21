@@ -24,11 +24,16 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
   <div class="product-form-container">
     <h1>Cadastro de Produto</h1>
 
-    <form id="product-form" action="upload.php" method="post" enctype="multipart/form-data">
+    <form action="upload.php" method="post" enctype="multipart/form-data" onsubmit="return validarVariantes()">
 
       <div class="product-form-group">
         <label for="upload-image">Imagem do Produto</label>
-        <input type="file" id="upload-image" name="product-image" required>
+      <input type="file" id="upload-image" name="product-image" accept="image" required>
+      </div>
+
+      <div class="product-form-group">
+      <label for="extra-images">Imagens Adicionais (até 5)</label>
+      <input type="file" id="extra-images" name="product-images[]" accept="image" multiple>
       </div>
 
       <div class="product-form-group">
@@ -145,6 +150,16 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
       });
       container.appendChild(table);
     });
+
+    function validarVariantes() {
+      const variantContainer = document.getElementById('variant-stocks');
+      const hasInputs = variantContainer.querySelectorAll('input[name^="stocks["]').length > 0;
+      if (!hasInputs) {
+        alert('Você precisa gerar os estoques por variante antes de cadastrar o produto.');
+        return false;
+      }
+      return true;
+    }
   </script>
 </body>
 </html>

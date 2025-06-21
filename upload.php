@@ -11,19 +11,19 @@ try {
 }
 
 if (!isset($_FILES['product-image']) || $_FILES['product-image']['error'] !== UPLOAD_ERR_OK) {
-    die("Erro no upload da imagem.");
+    die("Erro no upload da imagem principal.");
 }
 $allowed = ['jpg','jpeg','png','gif'];
-$ext = strtolower(pathinfo($_FILES['product-image']['name'], PATHINFO_EXTENSION));
-if (!in_array($ext, $allowed)) {
-    die("Tipo de arquivo não permitido.");
+$extMain = strtolower(pathinfo($_FILES['product-image']['name'], PATHINFO_EXTENSION));
+if (!in_array($extMain, $allowed)) {
+    die("Tipo de arquivo principal não permitido.");
 }
-$newName = uniqid('prod_', true) . "." . $ext;
-$dest    = __DIR__ . "/uploads/" . $newName;
-if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $dest)) {
-    die("Falha ao mover o arquivo.");
+$newNameMain = uniqid('prod_main_', true) . "." . $extMain;
+$destMain    = __DIR__ . "/uploads/" . $newNameMain;
+if (!move_uploaded_file($_FILES['product-image']['tmp_name'], $destMain)) {
+    die("Falha ao mover o arquivo principal.");
 }
-$imgPath = "uploads/" . $newName;
+$imgPathMain = "uploads/" . $newNameMain;
 
 if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
     die("Acesso negado.");
@@ -35,7 +35,7 @@ $descricao   = trim($_POST['product-description'] ?? '');
 $sizesArr    = $_POST['sizes'] ?? [];
 $coresArr    = array_filter(array_map('trim', explode(',', $_POST['color'] ?? '')));
 $price       = (float) ($_POST['price'] ?? 0);
-$stocks      = $_POST['stocks'] ?? [];      
+$stocks      = $_POST['stocks'] ?? [];
 $newCatsText = trim($_POST['new_categories'] ?? '');
 $catIds      = $_POST['categories'] ?? [];
 
@@ -54,7 +54,7 @@ $idProd     = $produtoObj->inserir([
     'cores'      => implode(',', $coresArr),
     'preco'      => $price,
     'quantidade' => $totalEstoque,
-    'imagem'     => $imgPath,
+    'imagem'     => $imgPathMain,
     'id_artesao' => $idArt
 ]);
 
@@ -78,14 +78,13 @@ if (!empty($catIds)) {
       "INSERT INTO produto_categorias (id_produto, id_categoria) VALUES (:prod, :cat)"
     );
     foreach ($catIds as $catId) {
-        $stmt2->execute([':prod'=>$idProd, ':cat'=>$catId]);
+        $stmt2->execute([':prod' => $idProd, ':cat' => $catId]);
     }
 }
 
-$insVar = $pdo->prepare("
-    INSERT INTO variantes (id_produto, tamanho, cor, estoque)
-    VALUES (:id_produto, :tamanho, :cor, :estoque)
-");
+$insVar = $pdo->prepare(
+    "INSERT INTO variantes (id_produto, tamanho, cor, estoque) VALUES (:id_produto, :tamanho, :cor, :estoque)"
+);
 foreach ($sizesArr as $tam) {
     $tam = trim($tam);
     if ($tam === '') continue;
@@ -101,5 +100,28 @@ foreach ($sizesArr as $tam) {
         ]);
     }
 }
+
+if (isset($_FILES['product-images'])) {
+    $extraFiles = $_FILES['product-images'];
+    $countFiles = count($extraFiles['name']);
+    $maxExtras = 5;
+    for ($i = 0; $i < min($countFiles, $maxExtras); $i++) {
+        if ($extraFiles['error'][$i] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($extraFiles['name'][$i], PATHINFO_EXTENSION));
+            if (in_array($ext, $allowed)) {
+                $newName = uniqid('prod_extra_', true) . "." . $ext;
+                $dest    = __DIR__ . "/uploads/" . $newName;
+                if (move_uploaded_file($extraFiles['tmp_name'][$i], $dest)) {
+                    $imgPath = "uploads/" . $newName;
+                    $stmtImg = $pdo->prepare(
+                        "INSERT INTO produto_imagens (id_produto, caminho) VALUES (:prod, :caminho)"
+                    );
+                    $stmtImg->execute([':prod' => $idProd, ':caminho' => $imgPath]);
+                }
+            }
+        }
+    }
+}
+
 header('Location: index.php?msg=Produto+cadastro+com+sucesso');
 exit;

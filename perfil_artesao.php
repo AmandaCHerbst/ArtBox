@@ -18,7 +18,7 @@ if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
 $idArtesao = $_SESSION['idUSUARIO'];
 
 $stmt = $pdo->prepare(
-    "SELECT nomePRODUTO AS nome,
+    "SELECT idPRODUTO, nomePRODUTO AS nome,
             descricaoPRODUTO AS descricao,
             imagemPRODUTO AS imagem
      FROM produtos
@@ -39,10 +39,11 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <header>
     <img src="assets/img/perfil.png" alt="Foto do Artesão">
     <div>
-      <h1>Bem-vindo, <?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1> <br>
-      <nav>
+      <h1>Bem-vindo, <?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1>
+      <nav> <br>
         <a href="cadastro_produto.php">Cadastrar Novo Produto</a>
-  <!--  <a href="pedidos.php">Gerenciar Pedidos</a> -->
+        <!-- Relatório Geral de Vendas -->
+        <a href="relatorio_vendas.php" class="btn-relatorio">Relatório de Vendas</a>
         <a href="logout.php">Sair</a>
       </nav>
     </div>
@@ -55,9 +56,11 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php if (count($produtos) > 0): ?>
           <?php foreach ($produtos as $p): ?>
             <div class="produto-card">
-              <img src="<?= htmlspecialchars($p['imagem']) ?>" alt="<?= htmlspecialchars($p['nome']) ?>">
-              <h3><?= htmlspecialchars($p['nome']) ?></h3>
-              <p><?= htmlspecialchars($p['descricao']) ?></p>
+              <a href="relatorio_especifico.php?id=<?= $p['idPRODUTO'] ?>">
+                <img src="<?= htmlspecialchars($p['imagem']) ?>" alt="<?= htmlspecialchars($p['nome']) ?>">
+                <h3><?= htmlspecialchars($p['nome']) ?></h3>
+                <p><?= htmlspecialchars($p['descricao']) ?></p>
+              </a>
             </div>
           <?php endforeach; ?>
         <?php else: ?>
