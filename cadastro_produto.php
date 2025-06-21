@@ -8,8 +8,16 @@ try {
 } catch (PDOException $e) {
     die("Erro ao conectar: " . $e->getMessage());
 }
-$cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
-            ->fetchAll(PDO::FETCH_ASSOC);
+
+// Busca as 5 categorias mais utilizadas nos produtos
+$cats = $pdo->query(
+    "SELECT c.idCATEGORIA, c.nomeCATEGORIA, COUNT(pc.id_produto) AS uso
+     FROM categorias c
+     LEFT JOIN produto_categorias pc ON c.idCATEGORIA = pc.id_categoria
+     GROUP BY c.idCATEGORIA, c.nomeCATEGORIA
+     ORDER BY uso DESC
+     LIMIT 5"
+)->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -28,12 +36,12 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
 
       <div class="product-form-group">
         <label for="upload-image">Imagem do Produto</label>
-      <input type="file" id="upload-image" name="product-image" accept="image" required>
+        <input type="file" id="upload-image" name="product-image" accept="image/*" required>
       </div>
 
       <div class="product-form-group">
-      <label for="extra-images">Imagens Adicionais (até 5)</label>
-      <input type="file" id="extra-images" name="product-images[]" accept="image" multiple>
+        <label for="extra-images">Imagens Adicionais (até 5)</label>
+        <input type="file" id="extra-images" name="product-images[]" accept="image/*" multiple>
       </div>
 
       <div class="product-form-group">
@@ -43,15 +51,11 @@ $cats = $pdo->query("SELECT idCATEGORIA, nomeCATEGORIA FROM categorias")
 
       <div class="product-form-group">
         <label for="product-description">Descrição do Produto</label>
-        <textarea id="product-description"
-                  name="product-description"
-                  rows="4"
-                  placeholder="Detalhes do produto"
-                  required></textarea>
+        <textarea id="product-description" name="product-description" rows="4" placeholder="Detalhes do produto" required></textarea>
       </div>
 
       <div class="product-form-group">
-        <label>Categorias</label>
+        <label>Categorias (Top 5 mais usadas)</label>
         <div class="options-inline">
           <?php foreach($cats as $c): ?>
             <label>

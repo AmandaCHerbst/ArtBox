@@ -1,0 +1,41 @@
+    .pagina-produto { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; }
+    .produto-detalhes { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .cabecalho-produto { display: flex; gap: 20px; flex-wrap: wrap; }
+    .carrossel-wrapper { position: relative; width: 100%; max-width: 360px; overflow: hidden; }
+    .carrossel { display: flex; transition: transform 0.5s ease-in-out; }
+    .slide { min-width: 100%; flex-shrink: 0; }
+    .slide img { width: 100%; height: 360px; object-fit: cover; border-radius: 8px; cursor: zoom-in; }
+    .nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: #fff; border: none; padding: 8px; cursor: pointer; }
+    .nav.left { left: 10px; }
+    .nav.right { right: 10px; }
+    .info-produto-header { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .info-produto-header h1 { margin: 0; font-size: 2rem; color: #333; }
+    .preco { font-size: 1.6rem; font-weight: bold; color: #e53935; margin: 0; }
+    .descricao { font-size: 1rem; color: #555; line-height: 1.5; }
+    .loja-info a { color: #B8860B; text-decoration: none; font-weight: 500; }
+    .options-container { display: flex; gap: 15px; flex-wrap: wrap; margin: 20px 0; }
+    .product-option { flex: 1; min-width: 120px; }
+    .product-option label { display: block; font-weight: 600; margin-bottom: 5px; }
+    select, input[type=number] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    #stock-info { font-weight: 600; margin-top: 5px; }
+    .action-buttons { display: flex; gap: 15px; }
+    .btn-primary { flex: 1; background: #43a047; color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; }
+    .btn-primary:disabled { background: #a5d6a7; }
+    .btn-secondary { background: #fbc02d; color: #212529; border: none; padding: 12px; border-radius: 6px; cursor: pointer; }
+    .favoritar-btn { margin-left: auto; }
+    .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10000; }
+    .lightbox img { max-width: 90%; max-height: 90%; border-radius: 8px; }
+    .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.3); border: none; font-size: 2rem; padding: 0.2em 0.5em; cursor: pointer; color: #000; }
+    .lightbox-nav.prev { left: 20px; }
+    .lightbox-nav.next { right: 20px; }
+    .recomendacoes { background: #fafafa; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .recomendacoes h2 { margin-top: 0; font-size: 1.4rem; color: #333; }
+    .recomendado-list { display: flex; flex-direction: column; gap: 12px; }
+    .recomendado-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); text-decoration: none; color: inherit; transition: transform .2s; }
+    .recomendado-item:hover { transform: translateY(-3px); }
+    .recomendado-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; }
+    .recomendado-info h4 { margin: 0; font-size: 1rem; color: #212121; }
+    .recomendado-info p { margin: 4px 0 0; font-weight: bold; color: #e53935; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 10001; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; }
+    .modal-content label { display: block; margin-top: 10px; }
