@@ -59,7 +59,6 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
               <a href="relatorio_especifico.php?id=<?= $p['idPRODUTO'] ?>">
                 <img src="<?= htmlspecialchars($p['imagem']) ?>" alt="<?= htmlspecialchars($p['nome']) ?>">
                 <h3><?= htmlspecialchars($p['nome']) ?></h3>
-                <p><?= htmlspecialchars($p['descricao']) ?></p>
               </a>
             </div>
           <?php endforeach; ?>

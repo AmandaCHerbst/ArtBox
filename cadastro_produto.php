@@ -80,20 +80,23 @@ $cats = $pdo->query(
       </div>
 
       <div class="product-form-group">
-        <label>Tamanhos Disponíveis</label>
-        <div class="options-inline">
-          <?php $sizes = ['Único','PP','P','M','G','GG','XG','XGG']; ?>
-          <?php foreach($sizes as $s): ?>
-            <label>
-              <input type="checkbox" name="sizes[]" value="<?= $s ?>"> <?= $s ?>
-            </label>
-          <?php endforeach; ?>
-        </div>
+        <label for="tipologia-nome">Nome da Tipologia</label>
+        <input type="text" id="tipologia-nome" name="tipologia_nome" placeholder="e, Medida, Volume" required>
       </div>
 
       <div class="product-form-group">
-        <label for="color">Cores Disponíveis <small>(separadas por vírgula)</small></label>
-        <input type="text" id="color" name="color" placeholder="ex: vermelho, azul" required>
+        <label for="tipologia-valores">Valores da Tipologia <small>(separados por vírgula)</small></label>
+        <input type="text" id="tipologia-valores" name="tipologia_valores" placeholder="ex: P, M, G ou 30cm, 50cm, 1m" required>
+      </div>
+
+      <div class="product-form-group">
+        <label for="especificacao-nome">Nome da Especificação</label>
+        <input type="text" id="especificacao-nome" name="especificacao_nome" placeholder="ex: Cor, Estampa, Material" required>
+      </div>
+
+      <div class="product-form-group">
+        <label for="especificacao-valores">Valores da Especificação <small>(separados por vírgula)</small></label>
+        <input type="text" id="especificacao-valores" name="especificacao_valores" placeholder="ex: vermelho, azul, floral" required>
       </div>
 
       <div class="product-form-group">
@@ -109,19 +112,19 @@ $cats = $pdo->query(
   <script>
     document.getElementById('generate-variants').addEventListener('click', function(e) {
       e.preventDefault();
-      const sizes = Array.from(document.querySelectorAll('input[name="sizes[]"]:checked'))
-                         .map(cb => cb.value.trim())
-                         .filter(v => v);
-      const colors = document.getElementById('color').value
-                         .split(',')
-                         .map(c => c.trim())
-                         .filter(v => v);
+      const nomeTipologia = document.getElementById('tipologia-nome').value.trim();
+      const nomeEspecificacao = document.getElementById('especificacao-nome').value.trim();
+
+      const valoresTipologia = document.getElementById('tipologia-valores').value
+                                 .split(',').map(v => v.trim()).filter(v => v);
+      const valoresEspecificacao = document.getElementById('especificacao-valores').value
+                                 .split(',').map(v => v.trim()).filter(v => v);
 
       const container = document.getElementById('variant-stocks');
       container.innerHTML = '';
 
-      if (sizes.length === 0 || colors.length === 0) {
-        container.innerHTML = '<p style="color:red;">Selecione pelo menos um tamanho e informe ao menos uma cor.</p>';
+      if (valoresTipologia.length === 0 || valoresEspecificacao.length === 0) {
+        container.innerHTML = '<p style="color:red;">Informe os valores de tipologia e especificação.</p>';
         return;
       }
 
@@ -129,24 +132,19 @@ $cats = $pdo->query(
       table.style.borderCollapse = 'collapse';
       table.innerHTML = `
         <tr>
-          <th style="border:1px solid #ddd;padding:5px;">Tamanho</th>
-          <th style="border:1px solid #ddd;padding:5px;">Cor</th>
+          <th style="border:1px solid #ddd;padding:5px;">${nomeTipologia}</th>
+          <th style="border:1px solid #ddd;padding:5px;">${nomeEspecificacao}</th>
           <th style="border:1px solid #ddd;padding:5px;">Estoque</th>
         </tr>
       `;
-      sizes.forEach(tam => {
-        colors.forEach(cor => {
+      valoresTipologia.forEach(t => {
+        valoresEspecificacao.forEach(e => {
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td style="border:1px solid #ddd;padding:5px;">${tam}</td>
-            <td style="border:1px solid #ddd;padding:5px;">${cor}</td>
+            <td style="border:1px solid #ddd;padding:5px;">${t}</td>
+            <td style="border:1px solid #ddd;padding:5px;">${e}</td>
             <td style="border:1px solid #ddd;padding:5px;">
-              <input type="number"
-                     name="stocks[${tam}][${cor}]"
-                     min="0"
-                     value="0"
-                     required
-                     style="width:60px;">
+              <input type="number" name="stocks[${t}][${e}]" min="0" value="0" required style="width:60px;">
             </td>
           `;
           table.appendChild(row);

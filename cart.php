@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($_POST['quantities'] as $variantId => $qty) {
             $variantId = (int)$variantId;
             $desired = max(0, (int)$qty);
-          
+
             $stmtStock = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = ?");
             $stmtStock->execute([$variantId]);
             $stock = (int)$stmtStock->fetchColumn();
@@ -58,7 +58,7 @@ if (!empty($_SESSION['cart'])) {
     $variantIds = array_keys($_SESSION['cart']);
     $placeholders = implode(',', array_fill(0, count($variantIds), '?'));
     $sql = "
-        SELECT v.idVARIANTE, v.tamanho, v.cor, v.estoque,
+        SELECT v.idVARIANTE, v.valor_tipologia AS tamanho, v.valor_especificacao AS cor, v.estoque,
                p.idPRODUTO, p.nomePRODUTO, p.precoPRODUTO, p.imagemPRODUTO
         FROM variantes v
         JOIN produtos p ON v.id_produto = p.idPRODUTO

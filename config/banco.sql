@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS produtos (
     idPRODUTO INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     nomePRODUTO VARCHAR(150) NOT NULL,
     descricaoPRODUTO TEXT NOT NULL,
-    tamanhos_disponiveis VARCHAR(255) DEFAULT NULL,
-    cores_disponiveis VARCHAR(255) DEFAULT NULL,
+    nome_tipologia VARCHAR(50) DEFAULT NULL,
+    nome_especificacao VARCHAR(50) DEFAULT NULL,
     precoPRODUTO DECIMAL(10,2) NOT NULL,
     quantidade INT UNSIGNED NOT NULL DEFAULT 0,
     imagemPRODUTO VARCHAR(255),
@@ -54,19 +54,20 @@ CREATE TABLE IF NOT EXISTS produto_categorias (
 
 CREATE TABLE produto_imagens (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  id_produto INT NOT NULL,
+  id_produto INT UNSIGNED NOT NULL,
   caminho VARCHAR(255) NOT NULL,
   FOREIGN KEY (id_produto) REFERENCES produtos(idPRODUTO)
 );
 
 CREATE TABLE variantes (
-    idVARIANTE INT AUTO_INCREMENT PRIMARY KEY,
-    id_produto INT NOT NULL,
-    tamanho VARCHAR(20) NOT NULL,
-    cor VARCHAR(20) NOT NULL,
-    estoque INT NOT NULL,
-    FOREIGN KEY (id_produto) REFERENCES produtos(idPRODUTO) ON DELETE CASCADE ON UPDATE CASCADE
-);
+  idVARIANTE INT AUTO_INCREMENT PRIMARY KEY,
+  id_produto INT UNSIGNED NOT NULL,
+  valor_tipologia VARCHAR(50) NOT NULL,
+  valor_especificacao VARCHAR(50) NOT NULL,
+  estoque INT NOT NULL,
+  FOREIGN KEY (id_produto) REFERENCES produtos(idPRODUTO)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 create table if not exists pedidos (
     idPEDIDO INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

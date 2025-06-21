@@ -32,16 +32,18 @@ $idArt = $_SESSION['idUSUARIO'];
 
 $nome        = trim($_POST['product-name'] ?? '');
 $descricao   = trim($_POST['product-description'] ?? '');
-$sizesArr    = $_POST['sizes'] ?? [];
-$coresArr    = array_filter(array_map('trim', explode(',', $_POST['color'] ?? '')));
+$tipologiaNome = trim($_POST['tipologia_nome'] ?? '');
+$especificacaoNome = trim($_POST['especificacao_nome'] ?? '');
+$tipologiaValores = array_filter(array_map('trim', explode(',', $_POST['tipologia_valores'] ?? '')));
+$especificacaoValores = array_filter(array_map('trim', explode(',', $_POST['especificacao_valores'] ?? '')));
 $price       = (float) ($_POST['price'] ?? 0);
 $stocks      = $_POST['stocks'] ?? [];
 $newCatsText = trim($_POST['new_categories'] ?? '');
 $catIds      = $_POST['categories'] ?? [];
 
 $totalEstoque = 0;
-foreach ($stocks as $tam => $cores) {
-    foreach ($cores as $cor => $qtd) {
+foreach ($stocks as $t => $esp) {
+    foreach ($esp as $e => $qtd) {
         $totalEstoque += max(0, (int)$qtd);
     }
 }
@@ -50,8 +52,8 @@ $produtoObj = new Produto($pdo);
 $idProd     = $produtoObj->inserir([
     'nome'       => $nome,
     'descricao'  => $descricao,
-    'tamanhos'   => implode(',', $sizesArr),
-    'cores'      => implode(',', $coresArr),
+    'nome_tipologia' => $tipologiaNome,
+    'nome_especificacao' => $especificacaoNome,
     'preco'      => $price,
     'quantidade' => $totalEstoque,
     'imagem'     => $imgPathMain,
@@ -83,19 +85,18 @@ if (!empty($catIds)) {
 }
 
 $insVar = $pdo->prepare(
-    "INSERT INTO variantes (id_produto, tamanho, cor, estoque) VALUES (:id_produto, :tamanho, :cor, :estoque)"
+    "INSERT INTO variantes (id_produto, valor_tipologia, valor_especificacao, estoque)
+     VALUES (:id_produto, :tipologia, :especificacao, :estoque)"
 );
-foreach ($sizesArr as $tam) {
+foreach ($stocks as $tam => $cores) {
     $tam = trim($tam);
     if ($tam === '') continue;
-    foreach ($coresArr as $cor) {
-        $qtdVar = isset($stocks[$tam][$cor])
-                  ? max(0, (int)$stocks[$tam][$cor])
-                  : 0;
+    foreach ($cores as $cor => $qtd) {
+        $qtdVar = isset($stocks[$tam][$cor]) ? max(0, (int)$stocks[$tam][$cor]) : 0;
         $insVar->execute([
             ':id_produto' => $idProd,
-            ':tamanho'    => $tam,
-            ':cor'        => $cor,
+            ':tipologia'    => $tam,
+            ':especificacao'        => $cor,
             ':estoque'    => $qtdVar
         ]);
     }

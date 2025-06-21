@@ -24,6 +24,9 @@ if (!$produto) {
     exit;
 }
 
+list($nomeTipologia, $valoresTipologia) = explode(':', $produto['tamanhos_disponiveis'] ?? 'Tipologia:');
+list($nomeEspecificacao, $valoresEspecificacao) = explode(':', $produto['cores_disponiveis'] ?? 'Especificações:');
+
 // Nome do artesão
 $stmt = $pdo->prepare("SELECT nomeUSUARIO FROM usuarios WHERE idUSUARIO = :id");
 $stmt->execute([':id' => $produto['id_artesao']]);
@@ -37,19 +40,15 @@ try {
     $imagens = array_filter($stmtImgs->fetchAll(PDO::FETCH_COLUMN));
 } catch (PDOException $e) {}
 
-// Garante array e monta slides
-if (!is_array($imagens)) {
-    $imagens = [];
-}
 $slides = array_merge([$produto['imagemPRODUTO']], $imagens);
 $totalSlides = count($slides);
 
 // Variantes
-$stmtVar = $pdo->prepare('SELECT idVARIANTE, tamanho, cor, estoque FROM variantes WHERE id_produto = :id');
+$stmtVar = $pdo->prepare('SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = :id');
 $stmtVar->execute([':id' => $idProduto]);
 $variantes = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
-$tamanhos = array_unique(array_column($variantes, 'tamanho'));
-$cores    = array_unique(array_column($variantes, 'cor'));
+$tamanhos = array_unique(array_column($variantes, 'valor_tipologia'));
+$cores    = array_unique(array_column($variantes, 'valor_especificacao'));
 
 // Recomendações
 $recomendados = [];
@@ -72,24 +71,20 @@ if ($cats) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($produto['nomePRODUTO']) ?> - ARTBOX</title>
   <link rel="stylesheet" href="assets/css/produto_ampliado.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
   <div class="pagina-produto">
     <div class="produto-detalhes">
       <div class="cabecalho-produto">
-
         <div class="carrossel-wrapper">
-          <?php if ($totalSlides > 1): ?>
-            <button class="nav left" onclick="prevSlide()">&#10094;</button>
-          <?php endif; ?>
+          <button class="nav left" onclick="prevSlide()">&#10094;</button>
           <div class="carrossel" id="carrossel">
             <?php foreach ($slides as $i => $img): ?>
-              <div class="slide"><img src="<?= htmlspecialchars($img) ?>" alt="" /></div>
+              <div class="slide"><img src="<?= htmlspecialchars($img) ?>" alt="" onclick="openLightbox(<?= $i ?>)" /></div>
             <?php endforeach; ?>
           </div>
-          <?php if ($totalSlides > 1): ?>
-            <button class="nav right" onclick="nextSlide()">&#10095;</button>
-          <?php endif; ?>
+          <button class="nav right" onclick="nextSlide()">&#10095;</button>
         </div>
 
         <div class="info-produto-header">
@@ -100,16 +95,26 @@ if ($cats) {
         </div>
       </div>
 
-      <div class="options-container"> 
-        <div class="product-option"><label for="select-tamanho">Tamanho</label><select id="select-tamanho"><option value="">Selecione</option><?php foreach($tamanhos as $t): ?><option><?= htmlspecialchars($t) ?></option><?php endforeach; ?></select></div>
-        <div class="product-option"><label for="select-cor">Cor</label><select id="select-cor"><option value="">Selecione</option><?php foreach($cores as $c): ?><option><?= htmlspecialchars($c) ?></option><?php endforeach; ?></select></div>
-        <p id="stock-info">Estoque: -</p>
-      </div>
+      <form method="post" action="cart.php" onsubmit="return validarCarrinho();">
+        <div class="options-container">
+          <div class="product-option">
+            <label for="select-tamanho"><?= htmlspecialchars($nomeTipologia) ?></label>
+            <select id="select-tamanho"><option value="">Selecione</option><?php foreach($tamanhos as $t): ?><option><?= htmlspecialchars($t) ?></option><?php endforeach; ?></select>
+          </div>
+          <div class="product-option">
+            <label for="select-cor"><?= htmlspecialchars($nomeEspecificacao) ?></label>
+            <select id="select-cor"><option value="">Selecione</option><?php foreach($cores as $c): ?><option><?= htmlspecialchars($c) ?></option><?php endforeach; ?></select>
+          </div>
+          <p id="stock-info">Estoque: -</p>
+        </div>
 
-      <div class="action-buttons"> 
-        <button type="button" class="btn-primary add-cart-btn" data-id="<?= $produto['idPRODUTO'] ?>" data-nome="<?= htmlspecialchars($produto['nomePRODUTO']) ?>">Adicionar ao Carrinho</button>
-        <button type="button" class="btn-secondary" onclick="location.href='favoritar.php?id='+<?= $produto['idPRODUTO'] ?>">Favoritar</button>
-      </div>
+        <div class="action-buttons">
+          <input type="hidden" name="variant_id" id="input-var-id">
+          <input type="number" name="quantity" value="1" min="1" id="input-quantidade">
+          <button type="submit" class="btn-primary"><span class="material-icons" aria-hidden="true">add_shopping_cart</span></button>
+          <button type="button" class="btn-secondary" onclick="location.href='favoritar.php?id=<?= $produto['idPRODUTO'] ?>'"><span class="material-icons" aria-hidden="true">favorite</span></button>
+        </div>
+      </form>
     </div>
 
     <aside class="recomendacoes">
@@ -125,90 +130,85 @@ if ($cats) {
     </aside>
   </div>
 
-  <div class="lightbox" id="lightbox">
-    <button class="lightbox-nav prev" onclick="prevLightbox(event)">&#10094;</button>
-    <img id="lightbox-img" onclick="event.stopPropagation()" />
-    <button class="lightbox-nav next" onclick="nextLightbox(event)">&#10095;</button>
-  </div>
-
-  <div class="modal" id="modal-selecao">
-    <div class="modal-content"> 
-      <h3 id="modal-nome-produto"></h3>
-      <input type="hidden" id="modal-id-produto" />
-      <label>Tamanho:</label><select id="modal-tamanho"><option value="">Selecione</option></select>
-      <label>Cor:</label><select id="modal-cor"><option value="">Selecione</option></select>
-      <p id="modal-stock">Estoque: -</p>
-      <label>Quantidade:</label><input id="modal-quantidade" type="number" min="1" value="1" />
-      <div style="display:flex; gap:10px; margin-top:15px;"><button id="modal-add" class="btn-primary">Adicionar</button><button id="modal-close" class="btn-secondary">Cancelar</button></div>
-    </div>
+  <div class="lightbox" id="lightbox" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);justify-content:center;align-items:center;z-index:9999;">
+    <button onclick="navigateLightbox(-1)" style="position:absolute;left:20px;font-size:2rem;color:#fff;z-index:10001">&#10094;</button>
+    <img id="lightbox-img" style="max-height:80%;max-width:80%;border-radius:10px" />
+    <button onclick="navigateLightbox(1)" style="position:absolute;right:20px;font-size:2rem;color:#fff;z-index:10001">&#10095;</button>
   </div>
 
   <script>
-  window.addEventListener('DOMContentLoaded', () => {
-    const carousel = document.getElementById('carrossel');
-    const slides = Array.from(carousel.children);
-    let current = 0;
+  const variantes = <?= json_encode($variantes) ?>;
+  const selT = document.getElementById('select-tamanho');
+  const selC = document.getElementById('select-cor');
+  const stock = document.getElementById('stock-info');
+  const qty = document.getElementById('input-quantidade');
 
-    function showSlide(idx) {
-      carousel.style.transform = `translateX(-${idx * 100}%)`;
-      current = idx;
+  selT.addEventListener('change', () => {
+    const size = selT.value;
+    const cores = [...new Set(variantes.filter(v => v.valor_tipologia === size).map(v => v.valor_especificacao))];
+    selC.innerHTML = '<option value="">Selecione</option>' + cores.map(c => `<option>${c}</option>`).join('');
+    stock.textContent = 'Estoque: -';
+  });
+
+  selC.addEventListener('change', () => {
+    const v = variantes.find(v => v.valor_tipologia === selT.value && v.valor_especificacao === selC.value) || {};
+    stock.textContent = 'Estoque: ' + (v.estoque || 0);
+    qty.max = v.estoque || 1;
+    qty.value = v.estoque ? 1 : 0;
+  });
+
+  function validarCarrinho() {
+    const tam = selT.value;
+    const cor = selC.value;
+    const variante = variantes.find(v => v.valor_tipologia === tam && v.valor_especificacao === cor);
+
+    if (!tam || !cor || !variante) {
+      alert('Selecione um tamanho e uma cor válidos.');
+      return false;
     }
-    window.nextSlide = () => showSlide((current + 1) % slides.length);
-    window.prevSlide = () => showSlide((current - 1 + slides.length) % slides.length);
-    showSlide(0);
+    document.getElementById('input-var-id').value = variante.idVARIANTE;
+    return true;
+  }
 
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let currentSlide = 0;
+
+  function showSlide(index) {
+    const carrossel = document.getElementById('carrossel');
+    carrossel.style.transform = `translateX(-${index * 100}%)`;
+    currentSlide = index;
+  }
+
+  function nextSlide() {
+    currentSlide = (currentSlide + 1) % slides.length;
+    showSlide(currentSlide);
+  }
+
+  function prevSlide() {
+    currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+    showSlide(currentSlide);
+  }
+
+  function openLightbox(index) {
     const lightbox = document.getElementById('lightbox');
     const lbImg = document.getElementById('lightbox-img');
+    lbImg.src = slides[index].querySelector('img').src;
+    lightbox.style.display = 'flex';
+    currentSlide = index;
+  }
 
-    function openLightbox(idx) {
-      lbImg.src = slides[idx].querySelector('img').src;
-      lightbox.style.display = 'flex';
-      current = idx;
+  function navigateLightbox(direction) {
+    currentSlide = (currentSlide + direction + slides.length) % slides.length;
+    openLightbox(currentSlide);
+  }
+
+  document.getElementById('lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox') {
+      document.getElementById('lightbox').style.display = 'none';
     }
-    window.nextLightbox = e => { e.stopPropagation(); window.nextSlide(); openLightbox(current); };
-    window.prevLightbox = e => { e.stopPropagation(); window.prevSlide(); openLightbox(current); };
-    lightbox.addEventListener('click', () => lightbox.style.display = 'none');
-
-    slides.forEach((slideEl, idx) => {
-      slideEl.querySelector('img').addEventListener('click', () => openLightbox(idx));
-    });
-
-    const addBtn = document.querySelector('.add-cart-btn');
-    const modal = document.getElementById('modal-selecao');
-    const selT = document.getElementById('modal-tamanho');
-    const selC = document.getElementById('modal-cor');
-    const stock = document.getElementById('modal-stock');
-    const qty = document.getElementById('modal-quantidade');
-    const vars = <?= json_encode($variantes) ?>;
-
-    addBtn.addEventListener('click', () => {
-      modal.style.display = 'flex';
-      document.getElementById('modal-nome-produto').innerText = addBtn.dataset.nome;
-      document.getElementById('modal-id-produto').value = addBtn.dataset.id;
-      selT.innerHTML = '<option value="">Selecione</option>' + [...new Set(vars.map(v => v.tamanho))].map(t => `<option>${t}</option>`).join('');
-      selC.innerHTML = '<option value="">Selecione</option>';
-      stock.textContent = 'Estoque: -'; qty.value = 1;
-    });
-    selT.addEventListener('change', () => {
-      const size = selT.value;
-      selC.innerHTML = '<option value="">Selecione</option>' + [...new Set(vars.filter(v => v.tamanho === size).map(v => v.cor))].map(c => `<option>${c}</option>`).join('');
-      stock.textContent = 'Estoque: -';
-    });
-    selC.addEventListener('change', () => {
-      const v = vars.find(v => v.tamanho === selT.value && v.cor === selC.value) || {};
-      stock.textContent = 'Estoque: ' + (v.estoque || 0);
-      qty.max = v.estoque || 1;
-      qty.value = v.estoque ? 1 : 0;
-    });
-    document.getElementById('modal-close').addEventListener('click', () => modal.style.display = 'none');
-    document.getElementById('modal-add').addEventListener('click', () => {
-      const v = vars.find(v => v.tamanho === selT.value && v.cor === selC.value);
-      if (!v) return;
-      const f = document.createElement('form'); f.method = 'post'; f.action = 'cart.php';
-      f.innerHTML = `<input type="hidden" name="variant_id" value="${v.idVARIANTE}"><input type="hidden" name="quantity" value="${qty.value}">`;
-      document.body.appendChild(f); f.submit();
-    });
   });
+
+  showSlide(0);
   </script>
 </body>
 </html>

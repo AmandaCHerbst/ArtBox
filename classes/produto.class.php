@@ -1,22 +1,30 @@
 <?php
 class Produto {
-    /** @var PDO  */
+    /** @var PDO */
     private $pdo;
 
-    /**
-     * @param PDO 
-     */
     public function __construct(PDO $pdo) {
         $this->pdo = $pdo;
     }
+
     /**
-     * @param int 
-     * @return array|false 
+     * Busca um produto pelo ID, incluindo nomes dinâmicos de tipologia e especificação
+     * @param int $id
+     * @return array|false
      */
     public function buscarPorId(int $id) {
         $sql = "
-            SELECT p.*, 
-                   GROUP_CONCAT(DISTINCT c.nomeCATEGORIA SEPARATOR ',') AS categorias
+            SELECT
+                p.idPRODUTO,
+                p.nomePRODUTO,
+                p.descricaoPRODUTO,
+                p.precoPRODUTO,
+                p.quantidade,
+                p.imagemPRODUTO,
+                p.id_artesao,
+                p.nome_tipologia,
+                p.nome_especificacao,
+                GROUP_CONCAT(DISTINCT c.nomeCATEGORIA SEPARATOR ',') AS categorias
             FROM produtos p
             LEFT JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
             LEFT JOIN categorias c ON pc.id_categoria = c.idCATEGORIA
@@ -29,7 +37,8 @@ class Produto {
     }
 
     /**
-     * @return array 
+     * Lista todos os produtos
+     * @return array
      */
     public function listar(): array {
         $sql = "SELECT * FROM produtos";
@@ -38,23 +47,24 @@ class Produto {
     }
 
     /**
-     * @param array 
-     * @return int 
+     * Insere um novo produto, salvando nomes de tipologia e especificação
+     * @param array $dados
+     * @return int ID do produto
      */
     public function inserir(array $dados): int {
         $sql = "
             INSERT INTO produtos
-                (nomePRODUTO, descricaoPRODUTO, tamanhos_disponiveis, cores_disponiveis,
+                (nomePRODUTO, descricaoPRODUTO, nome_tipologia, nome_especificacao,
                  precoPRODUTO, quantidade, imagemPRODUTO, id_artesao)
             VALUES
-                (:nome, :descr, :tamanhos, :cores, :preco, :quant, :img, :art)
+                (:nome, :descr, :tiponome, :espnome, :preco, :quant, :img, :art)
         ";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
             ':nome'     => $dados['nome'],
             ':descr'    => $dados['descricao'],
-            ':tamanhos' => $dados['tamanhos'],
-            ':cores'    => $dados['cores'],
+            ':tiponome' => $dados['nome_tipologia'],
+            ':espnome'  => $dados['nome_especificacao'],
             ':preco'    => $dados['preco'],
             ':quant'    => $dados['quantidade'],
             ':img'      => $dados['imagem'],
@@ -64,17 +74,18 @@ class Produto {
     }
 
     /**
+     * Atualiza um produto existente
      * @param int $id
-     * @param array 
-     * @return bool 
+     * @param array $dados
+     * @return bool
      */
     public function alterar(int $id, array $dados): bool {
         $sql = "
             UPDATE produtos SET
                 nomePRODUTO = :nome,
                 descricaoPRODUTO = :descr,
-                tamanhos_disponiveis = :tamanhos,
-                cores_disponiveis = :cores,
+                nome_tipologia = :tiponome,
+                nome_especificacao = :espnome,
                 precoPRODUTO = :preco,
                 quantidade = :quant,
                 imagemPRODUTO = :img
@@ -84,8 +95,8 @@ class Produto {
         $stmt->execute([
             ':nome'     => $dados['nome'],
             ':descr'    => $dados['descricao'],
-            ':tamanhos' => $dados['tamanhos'],
-            ':cores'    => $dados['cores'],
+            ':tiponome' => $dados['nome_tipologia'],
+            ':espnome'  => $dados['nome_especificacao'],
             ':preco'    => $dados['preco'],
             ':quant'    => $dados['quantidade'],
             ':img'      => $dados['imagem'],
@@ -95,8 +106,9 @@ class Produto {
     }
 
     /**
+     * Exclui um produto
      * @param int $id
-     * @return bool 
+     * @return bool
      */
     public function excluir(int $id): bool {
         $sql = "DELETE FROM produtos WHERE idPRODUTO = :id";

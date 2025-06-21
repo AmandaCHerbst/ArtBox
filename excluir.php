@@ -19,21 +19,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['delete_id'])) {
 
     $pdo->beginTransaction();
     try {
+        // 1. Excluir imagens adicionais do banco e do servidor
+        $stmtImgs = $pdo->prepare("SELECT caminho FROM produto_imagens WHERE id_produto = :id");
+        $stmtImgs->execute([':id' => $delId]);
+        $imgs = $stmtImgs->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($imgs as $caminho) {
+            $arquivo = __DIR__ . '/' . $caminho;
+            if (file_exists($arquivo)) {
+                unlink($arquivo); // exclui arquivo fisicamente
+            }
+        }
+
+        $stmtDelImgs = $pdo->prepare("DELETE FROM produto_imagens WHERE id_produto = :id");
+        $stmtDelImgs->execute([':id' => $delId]);
+
+        // 2. Excluir variantes
         $stmtVar = $pdo->prepare("DELETE FROM variantes WHERE id_produto = :id");
         $stmtVar->execute([':id' => $delId]);
 
+        // 3. Excluir categorias vinculadas
         $stmtCat = $pdo->prepare("DELETE FROM produto_categorias WHERE id_produto = :id");
         $stmtCat->execute([':id' => $delId]);
 
-        $stmtDel = $pdo->prepare("DELETE FROM produtos WHERE idPRODUTO = :id");
-        $stmtDel->execute([':id' => $delId]);
-
+        // 4. Excluir imagem principal do produto (se existir)
         if ($imgRow && !empty($imgRow['imagemPRODUTO'])) {
             $caminhoImagem = __DIR__ . '/' . $imgRow['imagemPRODUTO'];
             if (file_exists($caminhoImagem)) {
                 unlink($caminhoImagem);
             }
         }
+
+        // 5. Excluir o produto
+        $stmtDel = $pdo->prepare("DELETE FROM produtos WHERE idPRODUTO = :id");
+        $stmtDel->execute([':id' => $delId]);
 
         $pdo->commit();
         $msg = "Produto excluído com sucesso.";
