@@ -9,7 +9,6 @@ try {
     die("Erro ao conectar: " . $e->getMessage());
 }
 
-// Busca as 5 categorias mais utilizadas nos produtos
 $cats = $pdo->query(
     "SELECT c.idCATEGORIA, c.nomeCATEGORIA, COUNT(pc.id_produto) AS uso
      FROM categorias c
