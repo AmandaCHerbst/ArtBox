@@ -11,28 +11,43 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+$idProduto = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+if (!$idProduto) {
     header('Location: index.php');
     exit;
 }
-$idProduto = (int) $_GET['id'];
 
 $produtoObj = new Produto($pdo);
-$produto = $produtoObj->buscarPorId($idProduto);
+$produto    = $produtoObj->buscarPorId($idProduto);
 if (!$produto) {
     echo '<p>Produto não encontrado.</p>';
     exit;
 }
 
+$isFavorito = false;
+if (isset($_SESSION['user_id'])) {
+    $fs = $pdo->prepare("SELECT COUNT(*) FROM favoritos WHERE idUSUARIO = :u AND idPRODUTO = :p");
+    $fs->execute([':u' => $_SESSION['user_id'], ':p' => $idProduto]);
+    $isFavorito = ($fs->fetchColumn() > 0);
+}
+
+$toastIcon = '';
+$toastText = '';
+if (isset($_GET['fav'])) {
+    if ($_GET['fav'] === 'adicionado') {
+        $toastText = 'Produto adicionado aos favoritos!';
+    } elseif ($_GET['fav'] === 'removido') {
+        $toastText = 'Produto removido dos favoritos.';
+    }
+}
+
 list($nomeTipologia, $valoresTipologia) = explode(':', $produto['tamanhos_disponiveis'] ?? 'Tipologia:');
 list($nomeEspecificacao, $valoresEspecificacao) = explode(':', $produto['cores_disponiveis'] ?? 'Especificações:');
 
-// Nome do artesão
 $stmt = $pdo->prepare("SELECT nomeUSUARIO FROM usuarios WHERE idUSUARIO = :id");
 $stmt->execute([':id' => $produto['id_artesao']]);
 $nomeArtesao = $stmt->fetchColumn();
 
-// Imagens adicionais
 $imagens = [];
 try {
     $stmtImgs = $pdo->prepare('SELECT caminho FROM produto_imagens WHERE id_produto = :id');
@@ -43,14 +58,12 @@ try {
 $slides = array_merge([$produto['imagemPRODUTO']], $imagens);
 $totalSlides = count($slides);
 
-// Variantes
 $stmtVar = $pdo->prepare('SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = :id');
 $stmtVar->execute([':id' => $idProduto]);
 $variantes = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
 $tamanhos = array_unique(array_column($variantes, 'valor_tipologia'));
 $cores    = array_unique(array_column($variantes, 'valor_especificacao'));
 
-// Recomendações
 $recomendados = [];
 $cats = !empty($produto['categorias']) ? explode(',', $produto['categorias']) : [];
 if ($cats) {
@@ -72,8 +85,29 @@ if ($cats) {
   <title><?= htmlspecialchars($produto['nomePRODUTO']) ?> - ARTBOX</title>
   <link rel="stylesheet" href="assets/css/produto_ampliado.css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+    .toast {position:fixed top: 20px left: 50% transform: translateX(-50%) background: rgba(0,0,0,0.85) color: #fff padding: 12px 20px border-radius: 8px opacity: 0 pointer-events: none transition: opacity 0.5s ease display: flex align-items: center gap: 8px z-index: 10000;}
+    .toast.show { opacity: 1; pointer-events: auto;}
+  </style>
 </head>
 <body>
+<?php
+$messageFav = '';
+if (isset($_GET['fav'])) {
+    if ($_GET['fav'] === 'adicionado') {
+        $messageFav = 'Produto adicionado aos favoritos!';
+    } elseif ($_GET['fav'] === 'removido') {
+        $messageFav = 'Produto removido dos favoritos.';
+    }
+}
+?>
+<script>
+  const toastMessage = <?= json_encode($messageFav) ?>;
+</script>
+  <div id="toast" class="toast">
+    <span class="material-icons" id="toast-icon"></span>
+    <span id="toast-text"></span>
+  </div>
   <div class="pagina-produto">
     <div class="produto-detalhes">
       <div class="cabecalho-produto">
@@ -112,7 +146,11 @@ if ($cats) {
           <input type="hidden" name="variant_id" id="input-var-id">
           <input type="number" name="quantity" value="1" min="1" id="input-quantidade">
           <button type="submit" class="btn-primary"><span class="material-icons" aria-hidden="true">add_shopping_cart</span></button>
-          <button type="button" class="btn-secondary" onclick="location.href='favoritar.php?id=<?= $produto['idPRODUTO'] ?>'"><span class="material-icons" aria-hidden="true">favorite</span></button>
+          <a href="favoritar.php?id=<?= $produto['idPRODUTO'] ?>"
+                  class="btn-secondary <?= $isFavorito ? 'favorito' : '' ?>"
+                  title="<?= $isFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>">
+              <span class="material-icons">favorite</span>
+          </a>
         </div>
       </form>
     </div>
@@ -209,6 +247,21 @@ if ($cats) {
   });
 
   showSlide(0);
+    const toastIcon = <?= json_encode($toastIcon) ?>;
+    const toastText = <?= json_encode($toastText) ?>;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!toastText) return;
+
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-icon').textContent = toastIcon;
+      document.getElementById('toast-text').textContent = toastText;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    });
+
   </script>
 </body>
 </html>
