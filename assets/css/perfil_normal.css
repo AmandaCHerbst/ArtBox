@@ -1,0 +1,130 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f9f9f9;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #ddd;
+  padding: 20px 40px;
+}
+
+.pedidos-status {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.status-item a {
+  text-decoration: none;
+  color: #444;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: color 0.3s ease;
+}
+
+.status-item span {
+  font-size: 2rem;
+}
+
+.status-item a:hover {
+  color: #E56B6F;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+.perfil-usuario {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.perfil-usuario img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid #E56B6F;
+  margin-bottom: 15px;
+}
+
+.perfil-usuario h1 {
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+}
+
+.botoes {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.btn {
+  padding: 10px 20px;
+  background-color: #E56B6F;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #c85156;
+}
+
+.btn-sair {
+  background-color: #999;
+}
+
+.btn-sair:hover {
+  background-color: #777;
+}
+
+section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #333;
+  padding-left: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+}
+
+.produto-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  text-align: center;
+}
+
+.produto-card:hover {
+  transform: translateY(-4px);
+}
+
+.produto-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.produto-card h3 {
+  padding: 10px;
+  font-size: 1rem;
+  color: #222;
+}
