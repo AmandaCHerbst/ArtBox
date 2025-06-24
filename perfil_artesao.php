@@ -33,11 +33,9 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Perfil do Artesão - ARTBOX</title>
-  <?//<link rel="stylesheet" href="assets/css/perfil_artesao.css" /> ?>
+  <?php //<link rel="stylesheet" href="assets/css/perfil_artesao.css" /> ?>
   <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
-    rel="stylesheet"
-  />
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
   <style>
     body {
       font-family: Arial, sans-serif;
