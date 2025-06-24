@@ -119,6 +119,7 @@ if (isset($_GET['fav'])) {
             <?php endforeach; ?>
           </div>
           <button class="nav right" onclick="nextSlide()">&#10095;</button>
+          <button class="nav left" onclick="prevSlide()">&#10094;</button>
         </div>
 
         <div class="info-produto-header">
