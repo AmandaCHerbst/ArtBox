@@ -116,17 +116,52 @@ try {
   <title>Perfil do Usuário - ARTBOX</title>
   <link rel="stylesheet" href="assets/css/perfil_normal.css">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .pedidos-status .fa-2x {
+  margin-bottom: 5px;
+  color: #000; /* exceto a estrela */
+}
+.status-item a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
 
+    </style>
 </head>
 <body>
   <header>
     <!-- Menu já incluso -->
     <section class="pedidos-status">
-      <div class="status-item"><a href="#"><span>💳</span><p>Não pago</p></a></div>
-      <div class="status-item"><a href="#"><span>📦</span><p>Preparando</p></a></div>
-      <div class="status-item"><a href="#"><span>🚛</span><p>A caminho</p></a></div>
-      <div class="status-item"><a href="#"><span>⭐</span><p>Avaliar</p></a></div>
-    </section>
+  <div class="status-item">
+    <a href="#">
+      <i class="fa-regular fa-credit-card fa-2x"></i>
+      <p>Não pago</p>
+    </a>
+  </div>
+  <div class="status-item">
+    <a href="#">
+      <i class="fa-solid fa-box-archive fa-2x"></i>
+      <p>Preparando</p>
+    </a>
+  </div>
+  <div class="status-item">
+    <a href="#">
+      <i class="fa-solid fa-truck-front fa-2x"></i>
+      <p>A caminho</p>
+    </a>
+  </div>
+  <div class="status-item">
+    <a href="#">
+      <i class="fa-regular fa-star fa-2x" style="color: #FFD43B;"></i>
+      <p>Avaliar</p>
+    </a>
+  </div>
+</section>
+
   </header>
 
   <main>
