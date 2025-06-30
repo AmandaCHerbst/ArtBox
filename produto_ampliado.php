@@ -24,7 +24,6 @@ if (!$produto) {
     exit;
 }
 
-// verifica favorito
 $isFavorito = false;
 if (isset($_SESSION['idUSUARIO'])) {
     $fs = $pdo->prepare("SELECT COUNT(*) FROM favoritos WHERE idUSUARIO = :u AND idPRODUTO = :p");
@@ -32,7 +31,6 @@ if (isset($_SESSION['idUSUARIO'])) {
     $isFavorito = ($fs->fetchColumn() > 0);
 }
 
-// toast message
 $toastText = '';
 if (isset($_GET['fav'])) {
     if ($_GET['fav'] === 'adicionado') {
@@ -42,12 +40,17 @@ if (isset($_GET['fav'])) {
     }
 }
 
-// vendedor
-$stmt = $pdo->prepare("SELECT nomeUSUARIO FROM usuarios WHERE idUSUARIO = :id");
+$stmt = $pdo->prepare("
+    SELECT usuario, foto_perfil
+      FROM usuarios
+     WHERE idUSUARIO = :id
+");
 $stmt->execute([':id' => $produto['id_artesao']]);
-$nomeArtesao = $stmt->fetchColumn();
+$infoArtesao = $stmt->fetch(PDO::FETCH_ASSOC);
+$usuarioArtesao   = $infoArtesao['usuario'];
+$fotoArtesao      = $infoArtesao['foto_perfil'] ?: 'default.png';
 
-// imagens adicionais
+
 try {
     $stmtImgs = $pdo->prepare('SELECT caminho FROM produto_imagens WHERE id_produto = :id');
     $stmtImgs->execute([':id' => $idProduto]);
@@ -57,14 +60,12 @@ try {
 }
 $slides = array_merge([$produto['imagemPRODUTO']], $imagens);
 
-// variantes
 $stmtVar = $pdo->prepare('SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = :id');
 $stmtVar->execute([':id' => $idProduto]);
 $variantes = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
 $tamanhos = array_unique(array_column($variantes, 'valor_tipologia'));
 $cores = array_unique(array_column($variantes, 'valor_especificacao'));
 
-// recomendados
 $recomendados = [];
 $cats = !empty($produto['categorias']) ? explode(',', $produto['categorias']) : [];
 if ($cats) {
@@ -106,6 +107,21 @@ if ($cats) {
       cursor: pointer;
       z-index: 10002;
     }
+    .loja-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.user-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 6px;
+  border: 1px solid #ccc;
+}
   </style>
 </head>
 <body>
@@ -114,18 +130,22 @@ if ($cats) {
     <div class="produto-detalhes">
       <div class="cabecalho-produto">
         <div class="carrossel-wrapper">
-          <button class="nav left" onclick="prevSlide()">&#10094;</button>
+        <?php if (count($slides) > 1): ?>
+          <?php endif; ?>
           <div class="carrossel" id="carrossel">
-            <?php foreach ($slides as $i => $img): ?>
-              <div class="slide"><img src="<?= htmlspecialchars($img) ?>" alt="" onclick="openLightbox(<?= $i ?>)"></div>
-            <?php endforeach; ?>
+         <?php foreach ($slides as $i => $img): ?>
+          <div class="slide"><img src="<?= htmlspecialchars($img) ?>" alt="" onclick="openLightbox(<?= $i ?>)"></div>
+          <?php endforeach; ?>
           </div>
-          <button class="nav right" onclick="nextSlide()">&#10095;</button>
-          <button class="nav left" onclick="prevSlide()">&#10094;</button>
-        </div>
+            <?php if (count($slides) > 1): ?>
+            <button class="nav right" onclick="nextSlide()">&#10095;</button>
+            <button class="nav left" onclick="prevSlide()">&#10094;</button>
+            <?php endif; ?>
+    </div>
         <div class="info-produto-header">
           <h1><?= htmlspecialchars($produto['nomePRODUTO']) ?></h1>
-          <p class="loja-info">Vendido por: <a href="perfil_publico.php?id=<?= $produto['id_artesao'] ?>"><?= htmlspecialchars($nomeArtesao) ?></a></p>
+          <p class="loja-info"><a href="perfil_publico.php?id=<?= $produto['id_artesao'] ?>" class="loja-link">
+                  <img src="assets/img/perfis/<?= htmlspecialchars($fotoArtesao) ?>" alt="@ <?= htmlspecialchars($usuarioArtesao) ?>"class="user-thumb">@<?= htmlspecialchars($usuarioArtesao) ?></a></p>
           <p class="preco">R$ <?= number_format($produto['precoPRODUTO'],2,',','.') ?></p>
           <p class="descricao"><?= nl2br(htmlspecialchars($produto['descricaoPRODUTO'])) ?></p>
         </div>
