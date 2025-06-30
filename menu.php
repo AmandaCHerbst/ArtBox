@@ -81,11 +81,7 @@ if (session_status() === PHP_SESSION_NONE) {
   </div>
   <div class="icons">
     <?php if (isset($_SESSION['idUSUARIO'])): ?>
-      <a href="<?php
-        echo ($_SESSION['tipo_usuario'] === 'artesao')
-             ? 'perfil_artesao.php'
-             : 'perfil_normal.php';
-      ?>">
+      <a href="perfil_normal.php">
        <span class="material-icons" aria-hidden="true">account_circle</span>
       </a>
     <?php else: ?>

@@ -3,7 +3,7 @@ session_start();
 require __DIR__ . '/config/config.inc.php';
 include 'menu.php';
 
-if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'normal') {
+if (empty($_SESSION['idUSUARIO']) || ! in_array($_SESSION['tipo_usuario'], ['normal', 'artesao'])) {
     header('Location: login.php');
     exit;
 }
@@ -167,6 +167,10 @@ try {
       <h1><?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1>
       <div class="botoes">
         <a href="index.php" class="btn">Voltar às Compras</a>
+        <?php if ($_SESSION['tipo_usuario'] === 'artesao'): ?>
+         <a href="perfil_artesao.php" class="btn">Loja</a>
+          <?php endif; ?>
+
         <a href="logout.php" class="btn btn-sair">Sair</a>
       </div>
     </section>
