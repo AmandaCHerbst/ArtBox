@@ -17,7 +17,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 
 $idArtesao = (int)$_GET['id'];
 
-$stmtUser = $pdo->prepare("SELECT nomeUSUARIO FROM usuarios WHERE idUSUARIO = :id");
+$stmtUser = $pdo->prepare("SELECT nomeUSUARIO, foto_perfil FROM usuarios WHERE idUSUARIO = :id");
 $stmtUser->execute([':id' => $idArtesao]);
 $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
 if (!$usuario) {
@@ -37,7 +37,6 @@ if ($primeiroProduto) {
     [$nomeEspecificacao] = explode(':', $primeiroProduto['cores_disponiveis'] ?? 'Cor:');
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -56,7 +55,7 @@ if ($primeiroProduto) {
 </head>
 <body>
 <header>
-  <img src="assets/img/perfil.png" alt="Foto do Artesão">
+  <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Foto de perfil" />
   <div>
     <h1>Perfil de <?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
     <nav><br><a href="index.php">Voltar as compras</a></nav>

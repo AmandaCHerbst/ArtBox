@@ -3,24 +3,28 @@ session_start();
 require __DIR__ . '/config/config.inc.php';
 include 'menu.php';
 
+// Conexão
 try {
-    $pdo = new PDO(DSN, USUARIO, SENHA);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = new PDO(DSN, USUARIO, SENHA, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
+// Autenticação
 if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
-    header('Location: login.php');
-    exit;
+    header('Location: login.php'); exit;
 }
 
 $idArtesao = $_SESSION['idUSUARIO'];
 
+// Busca dados do artesão (nome + foto)
+$stmtUser = $pdo->prepare("SELECT nomeUSUARIO, foto_perfil FROM usuarios WHERE idUSUARIO = :id");
+$stmtUser->execute([':id' => $idArtesao]);
+$usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+// Busca produtos próprios
 $stmt = $pdo->prepare(
-    "SELECT idPRODUTO, nomePRODUTO AS nome,
-            descricaoPRODUTO AS descricao,
-            imagemPRODUTO AS imagem
+    "SELECT idPRODUTO, nomePRODUTO AS nome, descricaoPRODUTO AS descricao, imagemPRODUTO AS imagem
      FROM produtos
      WHERE id_artesao = :id"
 );
@@ -33,9 +37,8 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Perfil do Artesão - ARTBOX</title>
-  <?php //<link rel="stylesheet" href="assets/css/perfil_artesao.css" /> ?>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <link rel="stylesheet" href="assets/css/perfil_artesao.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -145,18 +148,12 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
   <header>
-    <img src="assets/img/perfil.png" alt="Foto do Artesão" />
+    <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Foto de perfil" />
     <div>
-      <h1>Bem-vindo, <?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1>
+      <h1>Bem-vindo, <?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
       <nav>
-        <a href="cadastro_produto.php">
-          <span class="material-symbols-outlined">add_circle</span>
-          Cadastrar Novo Produto
-        </a>
-        <a href="relatorio_vendas.php" class="btn-relatorio">
-          <span class="material-symbols-outlined">assignment</span>
-          Relatório de Vendas
-        </a>
+        <a href="cadastro_produto.php"><span class="material-symbols-outlined">add_circle</span>Cadastrar Novo Produto</a>
+        <a href="relatorio_vendas.php"><span class="material-symbols-outlined">assignment</span>Relatório de Vendas</a>
         <a href="logout.php">Sair</a>
       </nav>
     </div>
@@ -166,7 +163,7 @@ $produtos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <section>
       <h2>Meus Produtos</h2>
       <div class="grid">
-        <?php if (count($produtos) > 0): ?>
+        <?php if ($produtos): ?>
           <?php foreach ($produtos as $p): ?>
             <div class="produto-card">
               <a href="relatorio_especifico.php?id=<?= $p['idPRODUTO'] ?>">

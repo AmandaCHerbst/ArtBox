@@ -14,6 +14,10 @@ try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    $stmtUser = $pdo->prepare("SELECT nomeUSUARIO, foto_perfil FROM usuarios WHERE idUSUARIO = :id");
+    $stmtUser->execute([':id' => $idUsuario]);
+    $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
     $stmtFav = $pdo->prepare("SELECT p.idPRODUTO, p.nomePRODUTO, p.imagemPRODUTO
                               FROM favoritos f
                               JOIN produtos p ON f.idPRODUTO = p.idPRODUTO
@@ -115,101 +119,102 @@ try {
   <link rel="stylesheet" href="assets/css/perfil_normal.css">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .pedidos-status .fa-2x {
-  margin-bottom: 5px;
-  color: #000; 
-}
-.status-item a {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
-}
-
-    </style>
+  <style>
+    .pedidos-status .fa-2x { margin-bottom: 5px; color: #000; }
+    .status-item a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+    }
+    .perfil-usuario img.foto-perfil {
+      border-radius: 50%;
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border: 2px solid #007bff;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <section class="pedidos-status">
-  <div class="status-item">
-    <a href="#">
-      <i class="fa-regular fa-credit-card fa-2x"></i>
-      <p>Não pago</p>
-    </a>
-  </div>
-  <div class="status-item">
-    <a href="#">
-      <i class="fa-solid fa-box-archive fa-2x"></i>
-      <p>Preparando</p>
-    </a>
-  </div>
-  <div class="status-item">
-    <a href="#">
-      <i class="fa-solid fa-truck-front fa-2x"></i>
-      <p>A caminho</p>
-    </a>
-  </div>
-  <div class="status-item">
-    <a href="#">
-      <i class="fa-regular fa-star fa-2x" style="color: #FFD43B;"></i>
-      <p>Avaliar</p>
-    </a>
-  </div>
-</section>
+<header>
+  <section class="pedidos-status">
+    <div class="status-item">
+      <a href="#">
+        <i class="fa-regular fa-credit-card fa-2x"></i>
+        <p>Não pago</p>
+      </a>
+    </div>
+    <div class="status-item">
+      <a href="#">
+        <i class="fa-solid fa-box-archive fa-2x"></i>
+        <p>Preparando</p>
+      </a>
+    </div>
+    <div class="status-item">
+      <a href="#">
+        <i class="fa-solid fa-truck-front fa-2x"></i>
+        <p>A caminho</p>
+      </a>
+    </div>
+    <div class="status-item">
+      <a href="#">
+        <i class="fa-regular fa-star fa-2x" style="color: #FFD43B;"></i>
+        <p>Avaliar</p>
+      </a>
+    </div>
+  </section>
+</header>
 
-  </header>
+<main>
+  <section class="perfil-usuario">
+    <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Foto de perfil" />
+    <h1><?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
+    <div class="botoes">
+      <a href="index.php" class="btn">Voltar às Compras</a>
+      <?php if ($_SESSION['tipo_usuario'] === 'artesao'): ?>
+        <a href="perfil_artesao.php" class="btn">Loja</a>
+      <?php endif; ?>
+      <a href="logout.php" class="btn btn-sair">Sair</a>
+    </div>
+  </section>
 
-  <main>
-    <section class="perfil-usuario">
-      <img src="assets/img/perfil_normal.png" alt="Foto do Usuário">
-      <h1><?= htmlspecialchars($_SESSION['nomeUSUARIO']) ?></h1>
-      <div class="botoes">
-        <a href="index.php" class="btn">Voltar às Compras</a>
-        <?php if ($_SESSION['tipo_usuario'] === 'artesao'): ?>
-         <a href="perfil_artesao.php" class="btn">Loja</a>
-          <?php endif; ?>
+  <section class="favoritos">
+    <h2>Meus Favoritos</h2>
+    <div class="grid">
+      <?php if (count($favoritos) > 0): ?>
+        <?php foreach ($favoritos as $f): ?>
+          <div class="produto-card">
+            <a href="produto_ampliado.php?id=<?= $f['idPRODUTO'] ?>">
+              <img src="<?= htmlspecialchars($f['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($f['nomePRODUTO']) ?>">
+              <h3><?= htmlspecialchars($f['nomePRODUTO']) ?></h3>
+            </a>
+          </div>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <p>Você ainda não favoritou nenhum produto.</p>
+      <?php endif; ?>
+    </div>
+  </section>
 
-        <a href="logout.php" class="btn btn-sair">Sair</a>
-      </div>
-    </section>
-
-    <section class="favoritos">
-      <h2>Meus Favoritos</h2>
-      <div class="grid">
-        <?php if (count($favoritos) > 0): ?>
-          <?php foreach ($favoritos as $f): ?>
-            <div class="produto-card">
-              <a href="produto_ampliado.php?id=<?= $f['idPRODUTO'] ?>">
-                <img src="<?= htmlspecialchars($f['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($f['nomePRODUTO']) ?>">
-                <h3><?= htmlspecialchars($f['nomePRODUTO']) ?></h3>
-              </a>
-            </div>
-          <?php endforeach; ?>
-        <?php else: ?>
-          <p>Você ainda não favoritou nenhum produto.</p>
-        <?php endif; ?>
-      </div>
-    </section>
-
-    <section class="recomendados">
-      <h2>Recomendações para Você</h2>
-      <div class="grid">
-        <?php if (count($recomendados) > 0): ?>
-          <?php foreach ($recomendados as $r): ?>
-            <div class="produto-card">
-              <a href="produto_ampliado.php?id=<?= $r['idPRODUTO'] ?>">
-                <img src="<?= htmlspecialchars($r['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($r['nomePRODUTO']) ?>">
-                <h3><?= htmlspecialchars($r['nomePRODUTO']) ?></h3>
-              </a>
-            </div>
-          <?php endforeach; ?>
-        <?php else: ?>
-          <p>Não há recomendações no momento.</p>
-        <?php endif; ?>
-      </div>
-    </section>
-  </main>
+  <section class="recomendados">
+    <h2>Recomendações para Você</h2>
+    <div class="grid">
+      <?php if (count($recomendados) > 0): ?>
+        <?php foreach ($recomendados as $r): ?>
+          <div class="produto-card">
+            <a href="produto_ampliado.php?id=<?= $r['idPRODUTO'] ?>">
+              <img src="<?= htmlspecialchars($r['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($r['nomePRODUTO']) ?>">
+              <h3><?= htmlspecialchars($r['nomePRODUTO']) ?></h3>
+            </a>
+          </div>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <p>Não há recomendações no momento.</p>
+      <?php endif; ?>
+    </div>
+  </section>
+</main>
 </body>
 </html>

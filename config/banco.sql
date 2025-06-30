@@ -17,6 +17,9 @@ create table if not exists usuarios (
     usuario VARCHAR(100) NOT NULL, 
     data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+ALTER TABLE usuarios
+  ADD COLUMN foto_perfil VARCHAR(255) NOT NULL
+    DEFAULT 'default.png';
 
 create table if not exists categorias (
     idCATEGORIA INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
