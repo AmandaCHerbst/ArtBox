@@ -135,6 +135,14 @@ try {
       object-fit: cover;
       border: 2px solid #007bff;
     }
+    .btn-config {
+  text-decoration: none;
+  vertical-align: middle;
+  transition: transform 0.2s ease;
+}
+.btn-config:hover {
+  transform: scale(1.1);
+}
   </style>
 </head>
 <body>
@@ -169,8 +177,11 @@ try {
 
 <main>
   <section class="perfil-usuario">
-    <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Foto de perfil" />
-    <h1><?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
+    <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Foto de perfil" /><br>
+    <h1 style="display: inline-block;">
+        <?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
+          <a href="editar_perfil.php" class="btn-config" title="Configurar perfil" style="margin-left: 10px;">
+          <i class="fa-solid fa-gear" style="color: #000000; font-size: 1.4rem;"></i></a>
     <div class="botoes">
       <a href="index.php" class="btn">Voltar às Compras</a>
       <?php if ($_SESSION['tipo_usuario'] === 'artesao'): ?>

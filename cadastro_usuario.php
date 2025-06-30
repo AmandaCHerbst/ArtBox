@@ -2,7 +2,6 @@
 session_start();
 require __DIR__ . '/config/config.inc.php';
 
-// Definições de diretório e URL para uploads
 define('UPLOAD_DIR', __DIR__ . '/assets/img/perfis/');
 define('UPLOAD_URL', 'assets/img/perfis/');
 
@@ -14,7 +13,6 @@ try {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Recebendo dados do formulário
     $nome      = trim($_POST['nome'] ?? '');
     $usuario   = trim($_POST['usuario'] ?? '');
     $email     = trim($_POST['email'] ?? '');
@@ -23,7 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $senha     = $_POST['senha'] ?? '';
     $confirmar = $_POST['confirmar_senha'] ?? '';
 
-    // Validação de senhas
     if ($senha !== $confirmar) {
         $_SESSION['message']  = "Senhas não coincidem.";
         $_SESSION['msg_type'] = 'error';
@@ -31,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Verifica e-mail único
     $stmt = $pdo->prepare("SELECT idUSUARIO FROM usuarios WHERE email = :email");
     $stmt->execute([':email' => $email]);
     if ($stmt->fetch()) {
@@ -41,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Verifica usuário único
     $stmt = $pdo->prepare("SELECT idUSUARIO FROM usuarios WHERE usuario = :usuario");
     $stmt->execute([':usuario' => $usuario]);
     if ($stmt->fetch()) {
@@ -51,29 +46,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Hash da senha
     $hash = password_hash($senha, PASSWORD_BCRYPT);
 
-    // Inicializa nome da foto padrão
     $fotoNome = 'default.png';
 
-    // Processa upload de foto de perfil
     if (!empty($_FILES['fotoPerfil']['name'])) {
         $arquivo    = $_FILES['fotoPerfil'];
         $extensao   = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
         $permitidas = ['jpg','jpeg','png','gif'];
 
         if (in_array($extensao, $permitidas) && $arquivo['size'] <= 2_000_000) {
-            // Gera nome único
             $fotoNome = uniqid('usr_') . '.' . $extensao;
             $destino  = UPLOAD_DIR . $fotoNome;
 
-            // Cria diretório se não existir
             if (!is_dir(UPLOAD_DIR) && !mkdir(UPLOAD_DIR, 0755, true)) {
                 die('Não foi possível criar a pasta de uploads.');
             }
 
-            // Move arquivo
             if (!move_uploaded_file($arquivo['tmp_name'], $destino)) {
                 error_log("Falha ao mover upload para: $destino");
                 $fotoNome = 'default.png';
@@ -81,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Insere usuário no banco
     $stmt = $pdo->prepare(
         "INSERT INTO usuarios
          (nomeUSUARIO, usuario, email, senha, telefone, tipo_usuario, foto_perfil)
