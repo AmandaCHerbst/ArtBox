@@ -14,7 +14,6 @@ try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Buscar favoritos
     $stmtFav = $pdo->prepare("SELECT p.idPRODUTO, p.nomePRODUTO, p.imagemPRODUTO
                               FROM favoritos f
                               JOIN produtos p ON f.idPRODUTO = p.idPRODUTO
@@ -22,7 +21,6 @@ try {
     $stmtFav->execute([':id' => $idUsuario]);
     $favoritos = $stmtFav->fetchAll(PDO::FETCH_ASSOC);
 
-    // Buscar dados dos favoritos para recomendações
     $stmtFavDados = $pdo->prepare("
         SELECT p.nomePRODUTO, p.nome_tipologia, p.nome_especificacao, pc.id_categoria
         FROM favoritos f
@@ -120,7 +118,7 @@ try {
     <style>
         .pedidos-status .fa-2x {
   margin-bottom: 5px;
-  color: #000; /* exceto a estrela */
+  color: #000; 
 }
 .status-item a {
   display: flex;
@@ -134,7 +132,6 @@ try {
 </head>
 <body>
   <header>
-    <!-- Menu já incluso -->
     <section class="pedidos-status">
   <div class="status-item">
     <a href="#">
