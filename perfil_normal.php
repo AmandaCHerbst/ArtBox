@@ -155,7 +155,7 @@ try {
       </a>
     </div>
     <div class="status-item">
-      <a href="#">
+      <a href="preparando.php">
         <i class="fa-solid fa-box-archive fa-2x"></i>
         <p>Preparando</p>
       </a>

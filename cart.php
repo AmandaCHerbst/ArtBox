@@ -27,8 +27,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtStock = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = ?");
         $stmtStock->execute([$varId]);
         $stock = (int)$stmtStock->fetchColumn();
-        $current = $_SESSION['cart'][$varId] ?? 0;
-        $_SESSION['cart'][$varId] = min($current + $qtyToAdd, $stock);
+
+        $stmtVar = $pdo->prepare("SELECT v.idVARIANTE, v.valor_tipologia AS tamanho, v.valor_especificacao AS cor, v.estoque,
+                                          p.idPRODUTO, p.precoPRODUTO
+                                   FROM variantes v
+                                   JOIN produtos p ON v.id_produto = p.idPRODUTO
+                                   WHERE v.idVARIANTE = ?");
+        $stmtVar->execute([$varId]);
+        $varData = $stmtVar->fetch(PDO::FETCH_ASSOC);
+
+        if ($varData) {
+            $produtoId = $varData['idPRODUTO'];
+            $preco = $varData['precoPRODUTO'];
+
+            if (isset($_SESSION['cart'][$varId])) {
+                $_SESSION['cart'][$varId]['quantidade'] = min(
+                    $_SESSION['cart'][$varId]['quantidade'] + $qtyToAdd,
+                    $stock
+                );
+            } else {
+                $_SESSION['cart'][$varId] = [
+                    'id_produto' => $produtoId,
+                    'idVARIANTE' => $varId,
+                    'quantidade' => min($qtyToAdd, $stock),
+                    'preco'      => $preco,
+                ];
+            }
+        }
+
         header('Location: cart.php');
         exit;
     }
@@ -43,8 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtStock = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = ?");
                 $stmtStock->execute([$variantId]);
                 $stock = (int)$stmtStock->fetchColumn();
-                if ($desired > 0) {
-                    $_SESSION['cart'][$variantId] = min($desired, $stock);
+
+                if ($desired > 0 && isset($_SESSION['cart'][$variantId])) {
+                    $_SESSION['cart'][$variantId]['quantidade'] = min($desired, $stock);
                 } else {
                     unset($_SESSION['cart'][$variantId]);
                 }
@@ -83,18 +110,19 @@ if (!empty($_SESSION['cart'])) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($variantIds);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $qty = $_SESSION['cart'][$row['idVARIANTE']];
-        $sub = $row['precoPRODUTO'] * $qty;
+        $qty = $_SESSION['cart'][$row['idVARIANTE']]['quantidade'] ?? 0;
+        $preco = $_SESSION['cart'][$row['idVARIANTE']]['preco'] ?? $row['precoPRODUTO'];
+        $sub = $preco * $qty;
         $total += $sub;
         $items[] = [
-            'variantId'=> $row['idVARIANTE'],
-            'productId'=> $row['idPRODUTO'],
-            'name'=> $row['nomePRODUTO'] . " - " . $row['tamanho'] . " / " . $row['cor'],
-            'price'=> $row['precoPRODUTO'],
-            'stock'=> $row['estoque'],
-            'image'=> $row['imagemPRODUTO'],
-            'quantity'=> $qty,
-            'subtotal'=> $sub,
+            'variantId' => $row['idVARIANTE'],
+            'productId' => $row['idPRODUTO'],
+            'name'      => $row['nomePRODUTO'] . " - " . $row['tamanho'] . " / " . $row['cor'],
+            'price'     => $preco,
+            'stock'     => $row['estoque'],
+            'image'     => $row['imagemPRODUTO'],
+            'quantity'  => $qty,
+            'subtotal'  => $sub,
         ];
     }
 }
@@ -131,7 +159,7 @@ if (!empty($_SESSION['cart'])) {
           <tr>
             <td><img src="<?= htmlspecialchars($item['image']) ?>" width="50" height="50"></td>
             <td><?= htmlspecialchars($item['name']) ?></td>
-            <td>R$ <?= number_format($item['price'],2,',','.') ?></td>
+            <td>R$ <?= number_format($item['price'], 2, ',', '.') ?></td>
             <td>
               <input type="number"
                      name="quantities[<?= $item['variantId'] ?>]"
@@ -140,7 +168,7 @@ if (!empty($_SESSION['cart'])) {
                      max="<?= $item['stock'] ?>"
                      class="quantity-input">
             </td>
-            <td>R$ <?= number_format($item['subtotal'],2,',','.') ?></td>
+            <td>R$ <?= number_format($item['subtotal'], 2, ',', '.') ?></td>
             <td>
               <button type="submit"
                       name="remove"
@@ -160,7 +188,7 @@ if (!empty($_SESSION['cart'])) {
     </form>
 
     <div class="total">
-      Total: R$ <?= number_format($total,2,',','.') ?>
+      Total: R$ <?= number_format($total, 2, ',', '.') ?>
     </div>
 
   <?php endif; ?>
