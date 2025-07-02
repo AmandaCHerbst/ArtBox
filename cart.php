@@ -20,26 +20,8 @@ if (!isset($_SESSION['cart'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['remove'])) {
-        $variantId = (int)$_POST['remove'];
-        unset($_SESSION['cart'][$variantId]);
-    }
-    elseif (isset($_POST['update']) && isset($_POST['quantities']) && is_array($_POST['quantities'])) {
-        foreach ($_POST['quantities'] as $variantId => $qty) {
-            $variantId = (int)$variantId;
-            $desired = max(0, (int)$qty);
-
-            $stmtStock = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = ?");
-            $stmtStock->execute([$variantId]);
-            $stock = (int)$stmtStock->fetchColumn();
-            if ($desired > 0) {
-                $_SESSION['cart'][$variantId] = min($desired, $stock);
-            } else {
-                unset($_SESSION['cart'][$variantId]);
-            }
-        }
-    }
-    elseif (isset($_POST['variant_id'], $_POST['quantity'])) {
+    // 1. Adição direta ao carrinho via POST do index
+    if (isset($_POST['variant_id'], $_POST['quantity'])) {
         $varId = (int)$_POST['variant_id'];
         $qtyToAdd = max(1, (int)$_POST['quantity']);
         $stmtStock = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = ?");
@@ -47,7 +29,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stock = (int)$stmtStock->fetchColumn();
         $current = $_SESSION['cart'][$varId] ?? 0;
         $_SESSION['cart'][$varId] = min($current + $qtyToAdd, $stock);
+        header('Location: cart.php');
+        exit;
     }
+
+    // 2. Atualiza quantidades se clicado "Atualizar" ou "Finalizar Compra"
+    if (isset($_POST['update']) || isset($_POST['checkout'])) {
+        if (isset($_POST['quantities']) && is_array($_POST['quantities'])) {
+            foreach ($_POST['quantities'] as $variantId => $qty) {
+                $variantId = (int)$variantId;
+                $desired = max(0, (int)$qty);
+
+                $stmtStock = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = ?");
+                $stmtStock->execute([$variantId]);
+                $stock = (int)$stmtStock->fetchColumn();
+                if ($desired > 0) {
+                    $_SESSION['cart'][$variantId] = min($desired, $stock);
+                } else {
+                    unset($_SESSION['cart'][$variantId]);
+                }
+            }
+        }
+    }
+
+    // 3. Se for checkout, redireciona para checkout.php
+    if (isset($_POST['checkout'])) {
+        header('Location: checkout.php');
+        exit;
+    }
+
+    // 4. Se clicado "Remover"
+    if (isset($_POST['remove'])) {
+        $variantId = (int)$_POST['remove'];
+        unset($_SESSION['cart'][$variantId]);
+    }
+
     header('Location: cart.php');
     exit;
 }
@@ -71,7 +87,7 @@ if (!empty($_SESSION['cart'])) {
         $sub = $row['precoPRODUTO'] * $qty;
         $total += $sub;
         $items[] = [
-            'variantId'=>$row['idVARIANTE'],
+            'variantId'=> $row['idVARIANTE'],
             'productId'=> $row['idPRODUTO'],
             'name'=> $row['nomePRODUTO'] . " - " . $row['tamanho'] . " / " . $row['cor'],
             'price'=> $row['precoPRODUTO'],
@@ -99,7 +115,6 @@ if (!empty($_SESSION['cart'])) {
   <?php else: ?>
 
     <form method="post" action="cart.php">
-      <input type="hidden" name="update" value="1">
       <table>
         <thead>
           <tr>
@@ -139,15 +154,13 @@ if (!empty($_SESSION['cart'])) {
         </tbody>
       </table>
       <div class="actions">
-        <button type="submit" class="btn btn-primary">Atualizar Carrinho</button>
+        <button type="submit" name="update" class="btn btn-primary">Atualizar Carrinho</button>
+        <button type="submit" name="checkout" class="btn btn-success">Finalizar Compra</button>
       </div>
     </form>
 
     <div class="total">
       Total: R$ <?= number_format($total,2,',','.') ?>
-    </div>
-    <div class="actions">
-      <a href="checkout.php" class="btn btn-primary checkout-link">Finalizar Compra</a>
     </div>
 
   <?php endif; ?>
