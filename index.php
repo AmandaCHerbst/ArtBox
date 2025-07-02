@@ -10,63 +10,81 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
+// Top 3 categorias com estoque
 $sqlTopCats = "
   SELECT c.idCATEGORIA, c.nomeCATEGORIA, COUNT(pc.id_produto) AS total
     FROM categorias c
     JOIN produto_categorias pc ON c.idCATEGORIA = pc.id_categoria
-  GROUP BY c.idCATEGORIA
-  ORDER BY total DESC
-  LIMIT 3";
+    JOIN variantes v ON pc.id_produto = v.id_produto
+    WHERE v.estoque > 0
+    GROUP BY c.idCATEGORIA
+    ORDER BY total DESC
+    LIMIT 3";
 $topCats = $pdo->query($sqlTopCats)->fetchAll(PDO::FETCH_ASSOC);
 
 $produtosPorCategoria = [];
 foreach ($topCats as $cat) {
     $stmtP = $pdo->prepare(
-      "SELECT p.* FROM produtos p
+      "SELECT p.*,
+              (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) AS estoque_total
+         FROM produtos p
          JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
          WHERE pc.id_categoria = :cat
+           AND (SELECT SUM(v3.estoque) FROM variantes v3 WHERE v3.id_produto = p.idPRODUTO) > 0
          LIMIT 20"
     );
     $stmtP->execute([':cat' => $cat['idCATEGORIA']]);
     $items = $stmtP->fetchAll(PDO::FETCH_ASSOC);
     foreach ($items as &$p) {
-        $stmtVar = $pdo->prepare("SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = ?");
+        $stmtVar = $pdo->prepare(
+            "SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque
+             FROM variantes WHERE id_produto = ? AND estoque > 0"
+        );
         $stmtVar->execute([$p['idPRODUTO']]);
         $p['variantes'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
     }
+    unset($p);
     $produtosPorCategoria[$cat['nomeCATEGORIA']] = $items;
 }
 
+// Paginação e busca
 $pagina = max(1, (int)($_GET['page'] ?? 1));
 $porPagina = 20;
 $offset = ($pagina - 1) * $porPagina;
 $q = trim($_GET['q'] ?? '');
 
-if (!empty($q)) {
-    $stmtAll = $pdo->prepare("SELECT DISTINCT p.*
-        FROM produtos p
-        LEFT JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
-        LEFT JOIN categorias c ON c.idCATEGORIA = pc.id_categoria
-        LEFT JOIN variantes v ON p.idPRODUTO = v.id_produto
-        WHERE p.nomePRODUTO LIKE :q
-           OR p.descricaoPRODUTO LIKE :q
-           OR p.nome_tipologia LIKE :q
-           OR p.nome_especificacao LIKE :q
-           OR c.nomeCATEGORIA LIKE :q
-           OR v.valor_tipologia LIKE :q
-           OR v.valor_especificacao LIKE :q
-        ORDER BY p.idPRODUTO DESC
-        LIMIT :off, :lim");
+if ($q !== '') {
+    $stmtAll = $pdo->prepare(
+        "SELECT DISTINCT p.*,
+                (SELECT SUM(v.estoque) FROM variantes v WHERE v.id_produto = p.idPRODUTO) AS estoque_total
+         FROM produtos p
+         LEFT JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
+         LEFT JOIN categorias c ON c.idCATEGORIA = pc.id_categoria
+         WHERE (p.nomePRODUTO LIKE :q
+            OR p.descricaoPRODUTO LIKE :q
+            OR c.nomeCATEGORIA LIKE :q)
+           AND (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) > 0
+         ORDER BY p.idPRODUTO DESC
+         LIMIT :off, :lim"
+    );
     $stmtAll->bindValue(':q', "%$q%", PDO::PARAM_STR);
     $stmtAll->bindValue(':off', $offset, PDO::PARAM_INT);
     $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
     $stmtAll->execute();
 } else {
+    $sql = "SELECT p.*,
+                (SELECT SUM(v.estoque) FROM variantes v WHERE v.id_produto = p.idPRODUTO) AS estoque_total
+            FROM produtos p
+            WHERE (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) > 0";
     if ($pagina === 1) {
-        $stmtAll = $pdo->prepare("SELECT * FROM produtos ORDER BY RAND() LIMIT :lim");
+        $sql .= " ORDER BY RAND() LIMIT :lim";
+    } else {
+        $sql .= " ORDER BY p.idPRODUTO LIMIT :off, :lim";
+    }
+    $stmtAll = $pdo->prepare($sql);
+    if ($pagina === 1) {
         $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
     } else {
-        $stmtAll = $pdo->prepare("SELECT * FROM produtos ORDER BY idPRODUTO LIMIT :off, :lim");
         $stmtAll->bindValue(':off', $offset, PDO::PARAM_INT);
         $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
     }
@@ -74,7 +92,10 @@ if (!empty($q)) {
 }
 $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
 foreach ($allProducts as &$p) {
-    $stmtVar = $pdo->prepare("SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = ?");
+    $stmtVar = $pdo->prepare(
+        "SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque
+         FROM variantes WHERE id_produto = ? AND estoque > 0"
+    );
     $stmtVar->execute([$p['idPRODUTO']]);
     $p['variantes'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -100,7 +121,7 @@ if ($primeiro) {
 </head>
 <body>
 <?php if (empty($q)): ?>
-  <!-- Exibe categorias apenas se não houver busca -->
+  <!-- Exibe categorias -->
   <?php foreach ($produtosPorCategoria as $catName => $items): ?>
     <section class="cat-section">
       <h2><?= htmlspecialchars($catName) ?></h2>
@@ -125,9 +146,7 @@ if ($primeiro) {
 <?php endif; ?>
 
 <section class="all-products">
-  <h2>
-    <?= !empty($q) ? "Resultados para: " . htmlspecialchars($q) : 'Todos os Produtos' ?>
-  </h2>
+  <h2><?= !empty($q) ? 'Resultados para: '.htmlspecialchars($q) : 'Todos os Produtos' ?></h2>
   <?php if (!empty($allProducts)): ?>
     <div class="grid">
       <?php foreach ($allProducts as $p): ?>
@@ -136,7 +155,9 @@ if ($primeiro) {
             <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
           </a>
           <div class="card-body">
-            <h3 class="product-title"><a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>"><?= htmlspecialchars($p['nomePRODUTO']) ?></a></h3>
+            <h3 class="product-title">
+              <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>"><?= htmlspecialchars($p['nomePRODUTO']) ?></a>
+            </h3>
             <p class="product-price">R$ <?= number_format($p['precoPRODUTO'], 2, ',', '.') ?></p>
             <button class="add-cart-btn" data-id="<?= $p['idPRODUTO'] ?>" data-nome="<?= htmlspecialchars($p['nomePRODUTO']) ?>">Adicionar ao Carrinho</button>
           </div>
@@ -144,12 +165,13 @@ if ($primeiro) {
       <?php endforeach; ?>
     </div>
   <?php else: ?>
-    <div class="no-results" style="text-align: center; margin: 50px 0;">
+    <div class="no-results" style="text-align:center; margin:50px 0;">
       <p>Nenhum resultado encontrado.</p>
     </div>
   <?php endif; ?>
 </section>
 
+<!-- Modal de seleção -->
 <div class="modal" id="modal-selecao">
   <div class="modal-content">
     <h3 id="modal-nome-produto">Produto</h3>
@@ -214,10 +236,12 @@ if ($primeiro) {
     const form = document.createElement('form');
     form.method = 'post';
     form.action = 'cart.php';
-    form.innerHTML = `<input type="hidden" name="variant_id" value="${idVar}">` + `<input type="hidden" name="quantity" value="${qty}">`;
+    form.innerHTML = `<input type="hidden" name="variant_id" value="${idVar}">` +
+                     `<input type="hidden" name="quantity" value="${qty}">`;
     document.body.appendChild(form);
     form.submit();
   });
 </script>
+
 </body>
 </html>
