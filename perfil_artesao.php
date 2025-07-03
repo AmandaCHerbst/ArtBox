@@ -28,7 +28,7 @@ $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
 $stmtAtivos = $pdo->prepare(
     "SELECT p.idPRODUTO,
             p.nomePRODUTO AS nome,
-            p.descricaoPRODUTO AS descricao,
+            p.precoPRODUTO AS preco,
             p.imagemPRODUTO AS imagem,
             SUM(v.estoque) AS estoque_total
      FROM produtos p
@@ -44,7 +44,7 @@ $produtosAtivos = $stmtAtivos->fetchAll(PDO::FETCH_ASSOC);
 $stmtArquivados = $pdo->prepare(
     "SELECT p.idPRODUTO,
             p.nomePRODUTO AS nome,
-            p.descricaoPRODUTO AS descricao,
+            p.precoPRODUTO AS preco,
             p.imagemPRODUTO AS imagem
      FROM produtos p
      JOIN (
@@ -79,54 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pedido_id'], $_POST['
 <head>
   <meta charset="UTF-8">
   <title>Perfil do Artesão - ARTBOX</title>
-  <link rel="stylesheet" href="assets/css/estilos.css">
+  <link rel="stylesheet" href="assets/css/perfil_artesao.css">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-  <style>
-body { font-family: Arial, sans-serif; padding: 20px; background-color: #fafafa; color: #333; }
-main { padding: 20px; }
-.tab-panel.hidden { display: none; }
-.appbar { display: flex; align-items: center; justify-content: space-between; background-color: #ffffff; padding: 10px 20px; color: #333; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
-.profile-pic { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #ccc; object-fit: cover; }
-.appbar-content { flex: 1; margin-left: 15px; }
-.appbar-content h1 { margin: 0; font-size: 1.3rem; color: #222; }
-.tabs { margin-top: 8px; }
-.tab-button { background: transparent; border: none; color: #555; font-size: 1rem; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.3s ease, border-bottom 0.3s ease; margin-right: 10px; }
-.tab-button.active { color: #007bff; border-bottom: 2px solid #007bff; }
-.tab-button:hover { color: #007bff; }
-.appbar-actions .btn { padding: 6px 12px; text-decoration: none; font-size: 0.9rem; border-radius: 4px; font-weight: 600; margin-left: 8px; transition: background-color 0.3s ease; }
-.appbar-actions .btn.novo { background-color: #007bff; color: #fff; }
-.appbar-actions .btn.novo:hover { background-color: #0056b3; }
-.appbar-actions .btn.vendas { background-color: #28a745; color: #fff; }
-.appbar-actions .btn.vendas:hover { background-color: #1e7e34; }
-.appbar-actions .btn.sair { background-color: #dc3545; color: #fff; }
-.appbar-actions .btn.sair:hover { background-color: #b02a37; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
-.produto-card { background-color: #fff; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.produto-card:hover { transform: translateY(-4px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-.produto-card img { width: 100%; height: 150px; object-fit: cover; }
-.produto-card h3 { font-size: 1rem; margin: 10px; color: #2c3e50; }
-.empty { text-align: center; font-size: 1rem; color: #7f8c8d; margin-top: 20px; }
-.produto-card.arquivado { opacity: 0.6; position: relative; }
-.produto-card.arquivado .badge { position: absolute; top: 8px; right: 8px; background-color: #e74c3c; color: #ecf0f1; padding: 4px 8px; font-size: 0.8rem; border-radius: 4px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-th { background-color: #f5f5f5; }
-form { margin: 0; }
-form button { cursor: pointer; background-color: #007bff; border: none; color: white; padding: 5px 10px; border-radius: 3px; margin-right: 5px; transition: background-color 0.3s ease; }
-form button:hover { background-color: #0056b3; }
-  </style>
 </head>
 <body>
+  <!-- Perfil central -->
+  <section class="perfil-usuario">
+    <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Perfil">
+    <h1>Olá, <?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
+  </section>
+
   <header class="appbar">
-    <img class="profile-pic" src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Perfil">
-    <div class="appbar-content">
-      <h1>Olá, <?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>
-      <nav class="tabs">
-        <button class="tab-button active" data-tab="ativos">Meus Produtos</button>
-        <button class="tab-button" data-tab="arquivados">Arquivados</button>
-        <button class="tab-button" data-tab="pendentes">Pendentes</button>
-      </nav>
-    </div>
+    <nav class="tabs">
+      <button class="tab-button active" data-tab="ativos">Meus Produtos</button>
+      <button class="tab-button" data-tab="arquivados">Arquivados</button>
+      <button class="tab-button" data-tab="pendentes">Pendentes</button>
+    </nav>
     <div class="appbar-actions">
       <a href="cadastro_produto.php" class="btn novo">+ Novo Produto</a>
       <a href="relatorio_vendas.php" class="btn vendas">Vendas</a>
@@ -143,7 +111,7 @@ form button:hover { background-color: #0056b3; }
               <a href="relatorio_especifico.php?id=<?= $produto['idPRODUTO'] ?>">
                 <img src="<?= htmlspecialchars($produto['imagem']) ?>" alt="<?= htmlspecialchars($produto['nome']) ?>" />
                 <h3><?= htmlspecialchars($produto['nome']) ?></h3>
-                <p><?= htmlspecialchars($produto['descricao']) ?></p>
+                <p><strong>Preço:</strong> R$ <?= number_format($produto['preco'], 2, ',', '.') ?></p>
                 <p><strong>Estoque:</strong> <?= $produto['estoque_total'] ?></p>
               </a>
             </div>
@@ -163,7 +131,7 @@ form button:hover { background-color: #0056b3; }
                 <span class="badge">Esgotado</span>
                 <img src="<?= htmlspecialchars($produto['imagem']) ?>" alt="<?= htmlspecialchars($produto['nome']) ?>" />
                 <h3><?= htmlspecialchars($produto['nome']) ?></h3>
-                <p><?= htmlspecialchars($produto['descricao']) ?></p>
+                <p><strong>Preço:</strong> R$ <?= number_format($produto['preco'], 2, ',', '.') ?></p>
               </a>
             </div>
           <?php endforeach; ?>
