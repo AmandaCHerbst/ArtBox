@@ -1,0 +1,182 @@
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Quicksand', sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* Cabeçalho Público */
+header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background-color: #fff;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+header img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid #E56B6F;
+  object-fit: cover;
+}
+header h1 {
+  font-size: 1.8rem;
+  font-family: 'Quicksand', sans-serif;
+  color: #333;
+}
+header nav a {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: #8B5E3C;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+header nav a:hover {
+  border-color: #8B5E3C;
+}
+
+/* Grid de Produtos */
+main section {
+  padding: 30px 20px;
+}
+main section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #333;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+/* Cards de Produto */
+.produto-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.produto-card:hover {
+  transform: translateY(-4px);
+}
+.produto-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+.produto-card h3 {
+  padding: 12px;
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+.produto-card p {
+  padding: 0 12px;
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+/* Botão de Adicionar */
+.add-cart-btn {
+  background-color: #A95C38;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  margin: 0 12px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.add-cart-btn:hover {
+  background-color: #8A4528;
+}
+
+/* Mensagem sem produtos */
+p.empty-msg {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #999;
+  padding: 40px 0;
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+}
+.modal-content h3 {
+  margin-bottom: 16px;
+  font-size: 1.2rem;
+  color: #333;
+}
+.modal-content label {
+  display: block;
+  margin: 12px 0 4px;
+  font-size: 0.95rem;
+  color: #555;
+}
+.modal-content select,
+.modal-content input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.modal-content #modal-stock {
+  margin-bottom: 12px;
+  color: #666;
+}
+.btn-primary,
+.btn-secondary {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+}
+.btn-primary {
+  background: #4B7F52;
+  color: #fff;
+}
+.btn-secondary {
+  background: #B33A3A;
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #3b6641;
+}
+.btn-secondary:hover {
+  background: #922c2c;
+}

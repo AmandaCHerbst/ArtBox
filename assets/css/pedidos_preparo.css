@@ -1,0 +1,73 @@
+/* pedidos_preparo.css */
+body {
+  font-family: 'Quicksand', sans-serif;
+  background-color: #fafafa;
+  color: #333;
+  padding: 20px;
+  line-height: 1.5;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.page-header h1 {
+  font-size: 1.8rem;
+  color: #5C3A21;
+}
+
+.empty-msg {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #777;
+  padding: 40px 0;
+}
+
+/* Card de pedido */
+.pedido-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.pedido-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #EDE4DB;
+  padding: 12px 20px;
+}
+
+.pedido-header h2 {
+  font-size: 1.2rem;
+  color: #5C3A21;
+}
+
+.pedido-valor {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #A95C38;
+}
+
+.status {
+  padding: 10px 20px;
+  font-weight: bold;
+  color: #4E8C50;
+}
+
+.itens-list {
+  padding: 0 20px 20px;
+}
+
+.itens-list .item {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  color: #555;
+}
+
+.itens-list .item:last-child {
+  border-bottom: none;
+}

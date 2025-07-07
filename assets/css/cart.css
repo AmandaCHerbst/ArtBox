@@ -1,9 +1,124 @@
-    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
-    .quantity-input { width:60px; }
-    .btn { padding:8px 12px; border:none; border-radius:4px; cursor:pointer; }
-    .btn-danger { background:#dc3545; color:#fff; }
-    .btn-primary { background:#007bff; color:#fff; }
-    .actions { text-align:right; margin-top:10px; }
-    .total { text-align:right; font-size:1.2rem; margin-top:10px; }
-    .checkout-link { text-decoration:none; }
+body {
+  font-family: 'Quicksand', sans-serif;
+  background-color: #fdf9f5;
+  color: #333;
+  padding: 30px;
+  margin: 0;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  color: #5C3A21;
+  margin-bottom: 40px;
+}
+
+p {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #777;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+th, td {
+  padding: 14px 10px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+th {
+  background-color: #EDE4DB;
+  color: #5C3A21;
+  font-weight: bold;
+}
+
+td img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.quantity-input {
+  width: 60px;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.3s ease;
+}
+
+.btn-danger {
+  background-color: #B33A3A;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: #922c2c;
+}
+
+.btn-primary {
+  background-color: #A95C38;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #8A4528;
+}
+
+.btn-success {
+  background-color: #4B7F52;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background-color: #3b6641;
+}
+
+.actions {
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.total {
+  text-align: right;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #333;
+  margin-top: 15px;
+}
+
+.checkout-link {
+  text-decoration: none;
+  font-weight: bold;
+  color: #5C3A21;
+}
+
+a.btn-primary {
+  display: inline-block;
+  margin-top: 20px;
+}
