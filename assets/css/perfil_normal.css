@@ -30,15 +30,11 @@ header {
   transition: color 0.3s ease;
 }
 
-.status-item span {
-  font-size: 2rem;
-}
-
 .status-item a:hover {
   color: #E56B6F;
 }
 
-main {
+.main {
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px 20px;
@@ -49,16 +45,12 @@ main {
   margin-bottom: 40px;
 }
 
-.perfil-usuario img {
-  width: 120px;
-  height: 120px;
+.perfil-usuario img.foto-perfil {
   border-radius: 50%;
-  border: 3px solid #E56B6F;
-  margin-bottom: 15px;
-}
-
-.perfil-usuario h1 {
-  font-size: 1.8rem;
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border: 2px solid #007bff;
   margin-bottom: 15px;
 }
 
@@ -69,7 +61,7 @@ main {
   margin-top: 10px;
 }
 
-.btn {
+.btn, .btn-sair {
   padding: 10px 20px;
   background-color: #E56B6F;
   color: #fff;
@@ -79,12 +71,12 @@ main {
   transition: background-color 0.3s ease;
 }
 
-.btn:hover {
-  background-color: #c85156;
-}
-
 .btn-sair {
   background-color: #999;
+}
+
+.btn:hover {
+  background-color: #c85156;
 }
 
 .btn-sair:hover {
@@ -105,6 +97,7 @@ section h2 {
 }
 
 .produto-card {
+  position: relative;
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.06);
@@ -127,4 +120,22 @@ section h2 {
   padding: 10px;
   font-size: 1rem;
   color: #222;
+}
+
+/* Badge de indisponível adotando estilo do perfil_artesao */
+.badge-indisponivel {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #e74c3c;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  z-index: 10;
+}
+
+a.indisponivel {
+  cursor: not-allowed;
+  opacity: 0.6;
 }

@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pedido_id'], $_POST['
         <div class="grid">
           <?php foreach ($produtosArquivados as $produto): ?>
             <div class="produto-card arquivado">
-              <a href="relatorio_especifico.php?id=<?= $produto['idPRODUTO'] ?>">
+              <a href="editar_produto.php?id=<?= $produto['idPRODUTO'] ?>">
                 <span class="badge">Esgotado</span>
                 <img src="<?= htmlspecialchars($produto['imagem']) ?>" alt="<?= htmlspecialchars($produto['nome']) ?>" />
                 <h3><?= htmlspecialchars($produto['nome']) ?></h3>

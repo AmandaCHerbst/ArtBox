@@ -1,4 +1,5 @@
 <?php
+//sql
 session_start();
 include "menu.php";
 require __DIR__ . '/config/config.inc.php';
@@ -70,10 +71,19 @@ $recomendados = [];
 $cats = !empty($produto['categorias']) ? explode(',', $produto['categorias']) : [];
 if ($cats) {
     $ph = rtrim(str_repeat('?,', count($cats)), ',');
-    $sql = "SELECT DISTINCT p.* FROM produtos p
-            JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
-            JOIN categorias c ON pc.id_categoria = c.idCATEGORIA
-            WHERE c.nomeCATEGORIA IN ($ph) AND p.idPRODUTO != ? LIMIT 4";
+    $sql = "SELECT DISTINCT p.* 
+        FROM produtos p
+        JOIN produto_categorias pc 
+          ON p.idPRODUTO = pc.id_produto
+        JOIN categorias c 
+          ON pc.id_categoria = c.idCATEGORIA
+        JOIN variantes v 
+          ON p.idPRODUTO = v.id_produto 
+         AND v.estoque > 0
+        WHERE c.nomeCATEGORIA IN ($ph)
+          AND p.idPRODUTO != ?
+        LIMIT 4";
+
     $stmtRec = $pdo->prepare($sql);
     $stmtRec->execute(array_merge($cats, [$idProduto]));
     $recomendados = $stmtRec->fetchAll(PDO::FETCH_ASSOC);
