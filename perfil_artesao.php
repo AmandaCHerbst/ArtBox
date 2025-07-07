@@ -81,6 +81,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pedido_id'], $_POST['
   <title>Perfil do Artesão - ARTBOX</title>
   <link rel="stylesheet" href="assets/css/perfil_artesao.css">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <style>
+#pendentes table { width: 100%; border-collapse: collapse; margin: 20px auto; max-width: 800px; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.05);}
+#pendentes th, #pendentes td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #eee; font-size: 0.95rem; color: #555;}
+#pendentes th { background-color: #EDE4DB; color: #5C3A21; font-weight: 600;}
+#pendentes tr:last-child td { border-bottom: none;}
+#pendentes .status,
+#pendentes .status strong { color: #4E8C50; font-weight: bold;}
+#pendentes button[type="submit"] { padding: 6px 12px; border-radius: 12px; border: none; color: #fff; cursor: pointer; transition: background-color 0.3s; font-size: 0.9rem;}
+#pendentes button[value="aprovado"] { background-color: #4B7F52;}
+#pendentes button[value="aprovado"]:hover { background-color: #3b6641;}
+#pendentes button[value="rejeitado"] { background-color: #B33A3A;}
+#pendentes button[value="rejeitado"]:hover { background-color: #922c2c;}
+  </style>
 </head>
 <body>
   <!-- Perfil central -->

@@ -1,135 +1,191 @@
-    /* Perfil centralizado */
-    .perfil-usuario {
-      text-align: center;
-      margin: 30px auto;
-    }
-    .perfil-usuario img {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      border: 3px solid #E56B6F;
-      object-fit: cover;
-    }
-    .perfil-usuario h1 {
-      font-family: 'Quicksand', sans-serif;
-      font-size: 1.8rem;
-      margin-top: 15px;
-      color: #333;
-    }
-    /* Appbar atualizado */
-    .appbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background-color: #fff;
-      padding: 10px 20px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    .tabs {
-      margin-left: 20px;
-    }
-    .tab-button {
-      background: transparent;
-      border: none;
-      color: #555;
-      font-size: 1rem;
-      padding: 8px 12px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color 0.3s ease, border-bottom 0.3s ease;
-      margin-right: 10px;
-    }
-    .tab-button.active {
-      color: #A0522D;
-      border-bottom: 2px solid #A0522D;
-    }
-    .tab-button:hover {
-      color: #A0522D;
-    }
-    .tab-panel.hidden {
-      display: none;
-    }
-    /* Botões terrosos */
-    .appbar-actions .btn {
-      padding: 10px 18px;
-      text-decoration: none;
-      font-size: 1rem;
-      border-radius: 16px;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      display: inline-block;
-    }
-    .appbar-actions .btn.novo {
-      background-color: #CD853F;
-      color: #fff;
-    }
-    .appbar-actions .btn.novo:hover {
-      background-color: #B07433;
-    }
-    .appbar-actions .btn.vendas {
-      background-color: #8B5E3C;
-      color: #fff;
-    }
-    .appbar-actions .btn.vendas:hover {
-      background-color: #6F4A2E;
-    }
-    .appbar-actions .btn.sair {
-      background-color: #A44A3F;
-      color: #fff;
-    }
-    .appbar-actions .btn.sair:hover {
-      background-color: #803A33;
-    }
-    /* Grid e cards */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 24px;
-      padding: 20px;
-    }
-    .produto-card {
-      background-color: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
-      overflow: hidden;
-      text-align: center;
-      transition: transform 0.2s ease;
-      position: relative;
-    }
-    .produto-card:hover {
-      transform: translateY(-4px);
-    }
-    .produto-card img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-    }
-    .produto-card h3 {
-      margin: 10px 0;
-      font-size: 1rem;
-      color: #2c3e50;
-    }
-    .produto-card p {
-      margin: 5px 0;
-      font-size: 0.9rem;
-      color: #555;
-    }
-    .badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background-color: #e74c3c;
-      color: #fff;
-      padding: 4px 8px;
-      font-size: 0.8rem;
-      border-radius: 4px;
-    }
-    .empty {
-      text-align: center;
-      font-size: 1.1rem;
-      color: #999;
-      padding: 40px 0;
-    }
+/* Perfil centralizado */
+.perfil-usuario {
+  text-align: center;
+  margin: 30px auto;
+}
+.perfil-usuario img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid #E56B6F;
+  object-fit: cover;
+}
+.perfil-usuario h1 {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 1.8rem;
+  margin-top: 15px;
+  color: #333;
+}
+
+/* Appbar atualizado */
+.appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #fff;
+  padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.tabs {
+  margin-left: 20px;
+}
+.tab-button {
+  background: transparent;
+  border: none;
+  color: #555;
+  font-size: 1rem;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.3s ease, border-bottom 0.3s ease;
+  margin-right: 10px;
+}
+.tab-button.active {
+  color: #A0522D;
+  border-bottom: 2px solid #A0522D;
+}
+.tab-button:hover {
+  color: #A0522D;
+}
+.tab-panel.hidden {
+  display: none;
+}
+
+/* Botões terrosos */
+.appbar-actions .btn {
+  padding: 10px 18px;
+  text-decoration: none;
+  font-size: 1rem;
+  border-radius: 16px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+.appbar-actions .btn.novo {
+  background-color: #CD853F;
+  color: #fff;
+}
+.appbar-actions .btn.novo:hover {
+  background-color: #B07433;
+}
+.appbar-actions .btn.vendas {
+  background-color: #8B5E3C;
+  color: #fff;
+}
+.appbar-actions .btn.vendas:hover {
+  background-color: #6F4A2E;
+}
+.appbar-actions .btn.sair {
+  background-color: #A44A3F;
+  color: #fff;
+}
+.appbar-actions .btn.sair:hover {
+  background-color: #803A33;
+}
+
+/* Grid e cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
+  padding: 20px;
+}
+.produto-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+  text-align: center;
+  transition: transform 0.2s ease;
+  position: relative;
+}
+.produto-card:hover {
+  transform: translateY(-4px);
+}
+.produto-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+.produto-card h3 {
+  margin: 10px 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+.produto-card p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #e74c3c;
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border-radius: 4px;
+}
+.empty {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #999;
+  padding: 40px 0;
+}
+
+/* Pendente - no style
+#pendentes table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px auto;
+  max-width: 800px;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+#pendentes th, #pendentes td {
+  padding: 12px 15px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+  color: #555;
+}
+#pendentes th {
+  background-color: #EDE4DB;
+  color: #5C3A21;
+  font-weight: 600;
+}
+#pendentes tr:last-child td {
+  border-bottom: none;
+}
+#pendentes .status,
+#pendentes .status strong {
+  color: #4E8C50;
+  font-weight: bold;
+}
+#pendentes button[type="submit"] {
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+}
+#pendentes button[value="aprovado"] {
+  background-color: #4B7F52;
+}
+#pendentes button[value="aprovado"]:hover {
+  background-color: #3b6641;
+}
+#pendentes button[value="rejeitado"] {
+  background-color: #B33A3A;
+}
+#pendentes button[value="rejeitado"]:hover {
+  background-color: #922c2c;
+}*/
