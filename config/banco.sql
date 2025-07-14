@@ -105,6 +105,7 @@ create table if not exists itens_pedido (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+ALTER TABLE itens_pedido ADD COLUMN id_variante INT UNSIGNED AFTER id_produto;
 
 CREATE TABLE pedidos_artesao (
   idPEDIDOS_ARTESAO INT AUTO_INCREMENT PRIMARY KEY,

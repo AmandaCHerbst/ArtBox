@@ -2,10 +2,12 @@
 session_start();
 include 'menu.php';
 require __DIR__ . '/config/config.inc.php';
+require_once 'classes/Pedido.class.php';
+require_once 'classes/ItensPedido.class.php';
 
-// Garante que apenas artesões acessem
-if (!isset($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
-    die('Acesso negado. Apenas artesões podem ver este relatório.');
+if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
+    header('Location: login.php');
+    exit;
 }
 
 $idArtesao = $_SESSION['idUSUARIO'];
@@ -14,32 +16,60 @@ try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $sql = "
-    SELECT
-        p.idPEDIDO,
-        p.data_pedido,
-        u.nomeUSUARIO AS cliente,
-        pr.nomePRODUTO,
-        ip.quantidade,
-        ip.preco_unitario,
-        (ip.quantidade * ip.preco_unitario) AS subtotal,
-        v.valor_tipologia AS tipologia,
-        v.valor_especificacao AS especificacao
-    FROM pedidos p
-    JOIN usuarios u ON p.id_usuario = u.idUSUARIO
-    JOIN itens_pedido ip ON ip.id_pedido = p.idPEDIDO
-    JOIN produtos pr ON ip.id_produto = pr.idPRODUTO
-    LEFT JOIN variantes v ON v.id_produto = pr.idPRODUTO
-    WHERE pr.id_artesao = ?
-    ORDER BY p.data_pedido DESC
-    ";
+    $sqlPedidos = <<<SQL
+SELECT DISTINCT p.idPEDIDO, p.data_pedido, p.status, u.nomeUSUARIO AS cliente
+FROM pedidos p
+JOIN pedidos_artesao pa ON p.idPEDIDO = pa.id_pedido
+JOIN usuarios u ON u.idUSUARIO = p.id_usuario
+WHERE pa.id_artesao = :idArt
+  AND pa.status = 'aprovado'
+ORDER BY p.data_pedido DESC
+SQL;
+    $stmt = $pdo->prepare($sqlPedidos);
+    $stmt->execute([':idArt' => $idArtesao]);
+    $pedidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$idArtesao]);
-    $vendas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $grupos = ['pendente' => [], 'enviado' => [], 'entregue' => []];
+
+    $sqlItens = <<<SQL
+SELECT
+  ip.id_pedido,
+  ip.quantidade,
+  ip.preco_unitario,
+  ip.id_variante,
+  p.nomePRODUTO,
+  p.imagemPRODUTO,
+  v.valor_tipologia   AS tipologia,
+  v.valor_especificacao AS especificacao
+FROM itens_pedido ip
+JOIN produtos p ON ip.id_produto = p.idPRODUTO
+LEFT JOIN variantes v ON ip.id_variante = v.idVARIANTE
+WHERE ip.id_pedido = :pid
+SQL;
+    $stmtItens = $pdo->prepare($sqlItens);
+
+    foreach ($pedidos as $pedido) {
+        $stmtItens->execute([':pid' => $pedido['idPEDIDO']]);
+        $itens = $stmtItens->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($itens as $item) {
+            $grupos[strtolower($pedido['status'])][] = [
+                'idPEDIDO'      => $pedido['idPEDIDO'],
+                'data_pedido'   => $pedido['data_pedido'],
+                'cliente'       => $pedido['cliente'],
+                'nomePRODUTO'   => $item['nomePRODUTO'],
+                'imagem'        => $item['imagemPRODUTO'] ?: 'assets/img/sem-imagem.png',
+                'quantidade'    => $item['quantidade'],
+                'preco_unitario'=> $item['preco_unitario'],
+                'subtotal'      => $item['quantidade'] * $item['preco_unitario'],
+                'tipologia'     => $item['tipologia'] ?? '-',
+                'especificacao' => $item['especificacao'] ?? '-',
+            ];
+        }
+    }
 
 } catch (PDOException $e) {
-    die('Erro ao buscar relatório: ' . $e->getMessage());
+    die('Erro ao buscar relatório: ' . htmlspecialchars($e->getMessage()));
 }
 ?>
 
@@ -47,45 +77,220 @@ try {
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Vendas</title>
     <link rel="stylesheet" href="assets/css/relatorio_vendas.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+    <style>
+<style>
+body {
+    font-family: 'Quicksand', sans-serif;
+    background-color: #fafafa;
+    margin: 40px auto;
+    max-width: 1200px;
+    padding: 0 20px;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 40px;
+    color: #5C3A21;
+    font-size: 2em;
+}
+
+h2 {
+    color: #A95C38;
+    margin-top: 40px;
+    font-size: 1.4em;
+    border-bottom: 2px solid #A95C38;
+    padding-bottom: 6px;
+}
+
+.status-section {
+    margin-bottom: 60px;
+}
+
+.empty {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    margin-top: 20px;
+}
+
+.carousel {
+    margin: 20px 0;
+}
+
+.carousel .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    margin: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.card.hovered {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.product-thumb {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #eee;
+}
+
+.card-content {
+    padding: 16px 18px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card-content h3 {
+    font-size: 1.1em;
+    margin: 0 0 10px;
+    color: #5C3A21;
+}
+
+.card-content p {
+    margin: 4px 0;
+    font-size: 0.95em;
+}
+
+.card-content strong {
+    color: #555;
+}
+
+.variant-badge {
+    display: inline-block;
+    background-color: #EDE4DB;
+    color: #5C3A21;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    margin-left: 4px;
+}
+
+.slick-prev, .slick-next,
+.custom-prev, .custom-next {
+    background-color: #A95C38;
+    border: none;
+    color: white;
+    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slick-prev:hover, .slick-next:hover,
+.custom-prev:hover, .custom-next:hover {
+    background-color: #8C3F28;
+}
+
+.custom-prev, .custom-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.custom-prev {
+    left: -18px;
+}
+
+.custom-next {
+    right: -18px;
+}
+
+a.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 40px;
+    text-decoration: none;
+    color: #A95C38;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+a.back-link:hover {
+    text-decoration: underline;
+    color: #5C3A21;
+}
+</style>
+   </style>
 </head>
 <body>
-    <h1>Relatório de Vendas</h1>
+    <main class="container">
+        <h1>Relatório de Vendas</h1>
 
-    <?php if (empty($vendas)): ?>
-        <p>Você ainda não possui vendas registradas.</p>
-    <?php else: ?>
-        <table>
-            <thead>
-                <tr>
-                    <th>Pedido</th>
-                    <th>Data</th>
-                    <th>Cliente</th>
-                    <th>Produto</th>
-                    <th>Variante</th>
-                    <th>Quantidade</th>
-                    <th>Preço Unit.</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($vendas as $v): ?>
-                    <tr>
-                        <td><?= $v['idPEDIDO'] ?></td>
-                        <td><?= date('d/m/Y H:i', strtotime($v['data_pedido'])) ?></td>
-                        <td><?= htmlspecialchars($v['cliente']) ?></td>
-                        <td><?= htmlspecialchars($v['nomePRODUTO']) ?></td>
-                        <td><?= htmlspecialchars($v['tipologia'] . ' / ' . $v['especificacao']) ?></td>
-                        <td><?= $v['quantidade'] ?></td>
-                        <td>R$ <?= number_format($v['preco_unitario'], 2, ',', '.') ?></td>
-                        <td>R$ <?= number_format($v['subtotal'], 2, ',', '.') ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
+        <?php foreach (['pendente' => 'Preparando', 'enviado' => 'A caminho', 'entregue' => 'Entregues'] as $key => $titulo): ?>
+            <section class="status-section">
+                <h2><?= htmlspecialchars($titulo) ?></h2>
 
-    <a href="perfil_artesao.php">&larr; Voltar ao Painel</a>
+                <?php if (empty($grupos[$key])): ?>
+                    <p class="empty">Nenhuma venda nesta seção.</p>
+                <?php else: ?>
+                    <div class="carousel" id="carousel-<?= $key ?>">
+                        <?php foreach ($grupos[$key] as $v): ?>
+                            <article class="card">
+                                <img src="<?= htmlspecialchars($v['imagem']) ?>" alt="Imagem do produto" class="product-thumb">
+                                <div class="card-content">
+                                    <h3>Pedido #<?= $v['idPEDIDO'] ?></h3>
+                                    <p><strong>Data:</strong> <?= date('d/m/Y \à\s H:i', strtotime($v['data_pedido'])) ?></p>
+                                    <p><strong>Cliente:</strong> <?= htmlspecialchars($v['cliente']) ?></p>
+                                    <p><strong>Produto:</strong> <?= htmlspecialchars($v['nomePRODUTO']) ?></p>
+                                    <!--<p><strong>Variante:</strong> 
+                                        <span class="variant-badge"><?= htmlspecialchars($v['tipologia'] . ' / ' . $v['especificacao']) ?></span>
+                                    </p>-->
+                                    <p><strong>Qtd.:</strong> <?= (int)$v['quantidade'] ?></p>
+                                    <p><strong>Unitário:</strong> R$ <?= number_format($v['preco_unitario'], 2, ',', '.') ?></p>
+                                    <p><strong>Subtotal:</strong> R$ <?= number_format($v['subtotal'], 2, ',', '.') ?></p>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </section>
+        <?php endforeach; ?>
+
+        <a class="back-link" href="perfil_artesao.php">&larr; Voltar ao Painel</a>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <script>
+        $(function() {
+            ['pendente', 'enviado', 'entregue'].forEach(function(key) {
+                $('#carousel-' + key).slick({
+                    infinite: false,
+                    slidesToShow: 3,
+                    slidesToScroll: 1,
+                    arrows: true,
+                    dots: false,
+                    prevArrow: '<button class="slick-prev custom-prev">&lt;</button>',
+                    nextArrow: '<button class="slick-next custom-next">&gt;</button>',
+                    responsive: [
+                        { breakpoint: 1024, settings: { slidesToShow: 2 } },
+                        { breakpoint: 768, settings: { slidesToShow: 1 } }
+                    ]
+                });
+            });
+        });
+    </script>
 </body>
 </html>
