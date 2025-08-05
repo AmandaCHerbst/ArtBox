@@ -4,7 +4,6 @@ require __DIR__ . '/config/config.inc.php';
 include 'menu.php';
 require_once 'classes/Pedido.class.php';
 
-// Autenticação de artesão
 if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
     header('Location: login.php');
     exit;
@@ -12,19 +11,16 @@ if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
 
 $idArtesao = $_SESSION['idUSUARIO'];
 
-// Conexão PDO
 try {
     $pdo = new PDO(DSN, USUARIO, SENHA, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 } catch (PDOException $e) {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// Busca dados do artesão
 $stmtUser = $pdo->prepare("SELECT nomeUSUARIO, foto_perfil FROM usuarios WHERE idUSUARIO = :id");
 $stmtUser->execute([':id' => $idArtesao]);
 $usuario = $stmtUser->fetch(PDO::FETCH_ASSOC);
 
-// Produtos com estoque total > 0 (ativos)
 $stmtAtivos = $pdo->prepare(
     "SELECT p.idPRODUTO,
             p.nomePRODUTO AS nome,
@@ -40,7 +36,6 @@ $stmtAtivos = $pdo->prepare(
 $stmtAtivos->execute([':id' => $idArtesao]);
 $produtosAtivos = $stmtAtivos->fetchAll(PDO::FETCH_ASSOC);
 
-// Produtos com estoque total = 0 (arquivados)
 $stmtArquivados = $pdo->prepare(
     "SELECT p.idPRODUTO,
             p.nomePRODUTO AS nome,
@@ -58,11 +53,9 @@ $stmtArquivados = $pdo->prepare(
 $stmtArquivados->execute([':id' => $idArtesao]);
 $produtosArquivados = $stmtArquivados->fetchAll(PDO::FETCH_ASSOC);
 
-// Instancia serviço de pedidos
 $pedidoService = new Pedido($pdo);
 $pedidosPendentes = $pedidoService->listarPedidosPendentesPorArtesao($idArtesao);
 
-// Processar aprovação/rejeição via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pedido_id'], $_POST['acao'])) {
     $pedidoId = (int)$_POST['pedido_id'];
     $acao = $_POST['acao'];
@@ -96,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pedido_id'], $_POST['
   </style>
 </head>
 <body>
-  <!-- Perfil central -->
   <section class="perfil-usuario">
     <img src="assets/img/perfis/<?= htmlspecialchars($usuario['foto_perfil']) ?>" alt="Perfil">
     <h1>Olá, <?= htmlspecialchars($usuario['nomeUSUARIO']) ?></h1>

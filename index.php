@@ -10,7 +10,6 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
-// Top 3 categorias com estoque
 $sqlTopCats = "
   SELECT c.idCATEGORIA, c.nomeCATEGORIA, COUNT(pc.id_produto) AS total
     FROM categorias c

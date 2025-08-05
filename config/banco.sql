@@ -109,9 +109,9 @@ ALTER TABLE itens_pedido ADD COLUMN id_variante INT UNSIGNED AFTER id_produto;
 
 CREATE TABLE pedidos_artesao (
   idPEDIDOS_ARTESAO INT AUTO_INCREMENT PRIMARY KEY,
-  id_pedido         INT UNSIGNED NOT NULL,
-  id_artesao        INT UNSIGNED NOT NULL,
-  status            ENUM('pendente','aprovado','rejeitado') NOT NULL DEFAULT 'pendente',
+  id_pedido INT UNSIGNED NOT NULL,
+  id_artesao INT UNSIGNED NOT NULL,
+  status ENUM('pendente','aprovado','rejeitado') NOT NULL DEFAULT 'pendente',
   data_atualizacao  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (id_pedido)  REFERENCES pedidos(idPEDIDO)  ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (id_artesao) REFERENCES usuarios(idUSUARIO) ON DELETE CASCADE ON UPDATE CASCADE
