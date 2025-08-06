@@ -153,7 +153,7 @@ try {
       </a>
     </div>
     <div class="status-item">
-      <a href="#">
+      <a href="acaminho.php">
         <i class="fa-solid fa-truck-front fa-2x"></i>
         <p>A caminho</p>
       </a>

@@ -17,13 +17,14 @@ try {
     $pedidoService = new Pedido($pdo);
     $itensService = new ItensPedido($pdo);
 
-    // Consulta pedidos com status "preparando"
+    // Consulta pedidos com status "preparando" — ou seja, status 'pago' (não 'enviado' nem 'entregue')
     $stmt = $pdo->prepare(
         "SELECT DISTINCT p.*
          FROM pedidos p
          JOIN pedidos_artesao pa ON pa.id_pedido = p.idPEDIDO
          WHERE p.id_usuario = :idUsuario
            AND pa.status = 'aprovado'
+           AND p.status = 'pago'
          ORDER BY p.data_pedido DESC"
     );
     $stmt->execute([':idUsuario' => $idUsuario]);
@@ -33,6 +34,7 @@ try {
     die("Erro: " . $e->getMessage());
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
