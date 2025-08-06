@@ -2,7 +2,6 @@
 session_start();
 require __DIR__ . '/config/config.inc.php';
 
-// Autenticação de artesão
 if (empty($_SESSION['idUSUARIO']) || $_SESSION['tipo_usuario'] !== 'artesao') {
     header('Location: login.php');
     exit;
@@ -18,13 +17,11 @@ try {
     $pdo = new PDO(DSN, USUARIO, SENHA);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Carrega dados do produto
     $stmt = $pdo->prepare("SELECT * FROM produtos WHERE idPRODUTO = :id");
     $stmt->execute([':id' => $idProduto]);
     $produto = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$produto) throw new Exception('Produto não encontrado');
 
-    // Carrega categorias existentes
     $allCats = $pdo->query(
         "SELECT idCATEGORIA, nomeCATEGORIA FROM categorias ORDER BY nomeCATEGORIA"
     )->fetchAll(PDO::FETCH_ASSOC);
@@ -32,12 +29,10 @@ try {
     $stmtCats->execute([':id' => $idProduto]);
     $catsSelecionadas = $stmtCats->fetchAll(PDO::FETCH_COLUMN);
 
-    // Carrega imagens adicionais
     $stmtImgs = $pdo->prepare("SELECT caminho FROM produto_imagens WHERE id_produto = :id");
     $stmtImgs->execute([':id' => $idProduto]);
     $imagens = $stmtImgs->fetchAll(PDO::FETCH_COLUMN);
 
-    // Carrega variantes existentes e estoques
     $stmtVar = $pdo->prepare(
         "SELECT valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = :id"
     );
@@ -60,7 +55,7 @@ try {
   <div class="product-form-container">
     <h1>Editar Produto</h1>
     <form action="update_produto.php" method="post" enctype="multipart/form-data" onsubmit="return validarVariantes();">
-    <input type="hidden" name="id" value="<?= $idProduto ?>">
+      <input type="hidden" name="id" value="<?= $idProduto ?>">
 
       <div class="product-form-group">
         <label>Imagem Atual</label>
@@ -70,7 +65,6 @@ try {
         <label for="upload-image">Substituir Imagem (opcional)</label>
         <input type="file" id="upload-image" name="product-image" accept="image/*">
       </div>
-
       <div class="product-form-group">
         <label for="extra-images">Adicionar Imagens Adicionais</label>
         <input type="file" id="extra-images" name="product-images[]" accept="image/*" multiple>
@@ -80,7 +74,6 @@ try {
         <label for="product-name">Nome do Produto</label>
         <input type="text" id="product-name" name="product-name" value="<?= htmlspecialchars($produto['nomePRODUTO']) ?>" required>
       </div>
-
       <div class="product-form-group">
         <label for="product-description">Descrição do Produto</label>
         <textarea id="product-description" name="product-description" rows="4" required><?= htmlspecialchars($produto['descricaoPRODUTO']) ?></textarea>
@@ -98,7 +91,6 @@ try {
           <?php endforeach; ?>
         </div>
       </div>
-
       <div class="product-form-group">
         <label for="new-categories">Novas Categorias <small>(separadas por vírgula)</small></label>
         <input type="text" id="new-categories" name="new_categories" placeholder="ex: pintura, tela">
@@ -116,17 +108,14 @@ try {
         <label for="tipologia-nome">Nome da Tipologia</label>
         <input type="text" id="tipologia-nome" name="tipologia_nome" value="<?= htmlspecialchars($produto['nome_tipologia']) ?>" required>
       </div>
-
       <div class="product-form-group">
         <label for="tipologia-valores">Valores da Tipologia <small>(separados por vírgula)</small></label>
         <input type="text" id="tipologia-valores" name="tipologia_valores" value="<?= implode(',', array_unique(array_column($variantes,'valor_tipologia'))) ?>" required>
       </div>
-
       <div class="product-form-group">
         <label for="especificacao-nome">Nome da Especificação</label>
         <input type="text" id="especificacao-nome" name="especificacao_nome" value="<?= htmlspecialchars($produto['nome_especificacao']) ?>" required>
       </div>
-
       <div class="product-form-group">
         <label for="especificacao-valores">Valores da Especificação <small>(separados por vírgula)</small></label>
         <input type="text" id="especificacao-valores" name="especificacao_valores" value="<?= implode(',', array_unique(array_column($variantes,'valor_especificacao'))) ?>" required>
@@ -137,7 +126,25 @@ try {
       </div>
 
       <div id="variant-stocks">
-        <?php // gera tabela inicial de variantes com os valores existentes ?>
+        <?php if (!empty($variantes)): ?>
+          <table>
+            <tr>
+              <th><?= htmlspecialchars($produto['nome_tipologia']) ?></th>
+              <th><?= htmlspecialchars($produto['nome_especificacao']) ?></th>
+              <th>Estoque</th>
+            </tr>
+            <?php foreach ($variantes as $v): ?>
+              <tr>
+                <td><?= htmlspecialchars($v['valor_tipologia']) ?></td>
+                <td><?= htmlspecialchars($v['valor_especificacao']) ?></td>
+                <td>
+                  <input type="number" name="stocks[<?= htmlspecialchars($v['valor_tipologia']) ?>][<?= htmlspecialchars($v['valor_especificacao']) ?>]" 
+                         min="0" value="<?= (int)$v['estoque'] ?>" required style="width:60px;">
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </table>
+        <?php endif; ?>
       </div>
 
       <button type="submit" class="btn-submit-product">Salvar Alterações</button>

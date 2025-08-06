@@ -55,18 +55,25 @@ $q = trim($_GET['q'] ?? '');
 if ($q !== '') {
     $stmtAll = $pdo->prepare(
         "SELECT DISTINCT p.*,
-                (SELECT SUM(v.estoque) FROM variantes v WHERE v.id_produto = p.idPRODUTO) AS estoque_total
+                (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) AS estoque_total
          FROM produtos p
          LEFT JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
-         LEFT JOIN categorias c ON c.idCATEGORIA = pc.id_categoria
-         WHERE (p.nomePRODUTO LIKE :q
-            OR p.descricaoPRODUTO LIKE :q
-            OR c.nomeCATEGORIA LIKE :q)
-           AND (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) > 0
+         LEFT JOIN categorias c    ON c.idCATEGORIA = pc.id_categoria
+         LEFT JOIN variantes v     ON v.id_produto = p.idPRODUTO
+         WHERE (
+              p.nomePRODUTO         LIKE :q
+           OR p.descricaoPRODUTO    LIKE :q
+           OR p.nome_tipologia      LIKE :q
+           OR p.nome_especificacao  LIKE :q
+           OR c.nomeCATEGORIA       LIKE :q
+           OR v.valor_tipologia     LIKE :q
+           OR v.valor_especificacao LIKE :q
+         )
+         AND (SELECT SUM(v3.estoque) FROM variantes v3 WHERE v3.id_produto = p.idPRODUTO) > 0
          ORDER BY p.idPRODUTO DESC
          LIMIT :off, :lim"
     );
-    $stmtAll->bindValue(':q', "%$q%", PDO::PARAM_STR);
+    $stmtAll->bindValue(':q', "%{$q}%", PDO::PARAM_STR);
     $stmtAll->bindValue(':off', $offset, PDO::PARAM_INT);
     $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
     $stmtAll->execute();
