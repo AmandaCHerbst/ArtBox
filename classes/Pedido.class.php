@@ -16,42 +16,80 @@ class Pedido {
      * @throws Exception
      */
     public function criarPedido(int $userId, array $dadosCliente, array $carrinho): int {
-        $this->pdo->beginTransaction();
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
         try {
-            // Calcula valor total
-            $valorTotal = 0;
+            // Calcula valor total (usando preços do carrinho)
+            $valorTotal = 0.0;
             foreach ($carrinho as $item) {
-                $valorTotal += ($item['preco'] ?? 0) * ($item['quantidade'] ?? 0);
+                $valorTotal += (float)($item['preco'] ?? 0) * (int)($item['quantidade'] ?? 0);
             }
+
             // Insere pedido
-            $stmt = $this->pdo->prepare(
+            $stmt = $pdo->prepare(
                 "INSERT INTO pedidos (id_usuario, valor_total, status) VALUES (:uid, :total, 'pendente')"
             );
             $stmt->execute([':uid' => $userId, ':total' => $valorTotal]);
-            $pedidoId = (int)$this->pdo->lastInsertId();
+            $pedidoId = (int)$pdo->lastInsertId();
 
-            // Insere itens e diminui estoque
+            // Prepara statements
+            $stmtItem = $pdo->prepare(
+                "INSERT INTO itens_pedido (id_pedido, id_produto, id_variante, quantidade, preco_unitario)
+                 VALUES (:pid, :prod, :var, :qtd, :preco)"
+            );
+
+            $stmtSelectVar = $pdo->prepare("SELECT estoque FROM variantes WHERE idVARIANTE = :var FOR UPDATE");
+            $stmtUpdateVar = $pdo->prepare("UPDATE variantes SET estoque = estoque - :qtd WHERE idVARIANTE = :var");
+            $stmtUpdateProd = $pdo->prepare("UPDATE produtos SET quantidade = quantidade - :qtd WHERE idPRODUTO = :prod");
+
+            // Insere itens e ajusta estoque
             foreach ($carrinho as $item) {
-                $stmtItem = $this->pdo->prepare(
-                    "INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario)
-                     VALUES (:pid, :prod, :qtd, :preco)"
-                );
+                $idProduto = (int)($item['id_produto'] ?? 0);
+                $idVariante = isset($item['idVARIANTE']) ? (int)$item['idVARIANTE'] : null;
+                $qtd = max(0, (int)($item['quantidade'] ?? 0));
+                $preco = (float)($item['preco'] ?? 0);
+
+                // Insere item (id_variante pode ser NULL)
                 $stmtItem->execute([
-                    ':pid'   => $pedidoId,
-                    ':prod'  => $item['id_produto'],
-                    ':qtd'   => $item['quantidade'],
-                    ':preco' => $item['preco'],
+                    ':pid' => $pedidoId,
+                    ':prod' => $idProduto,
+                    ':var' => $idVariante,
+                    ':qtd' => $qtd,
+                    ':preco' => $preco,
                 ]);
-                if (!empty($item['idVARIANTE'])) {
-                    $stmtEst = $this->pdo->prepare(
-                        "UPDATE variantes SET estoque = estoque - :qtd WHERE idVARIANTE = :var"
-                    );
-                    $stmtEst->execute([':qtd' => $item['quantidade'], ':var' => $item['idVARIANTE']]);
+
+                // Se houver variante, checar estoque e decrementar
+                if (!empty($idVariante)) {
+                    $stmtSelectVar->execute([':var' => $idVariante]);
+                    $row = $stmtSelectVar->fetch(PDO::FETCH_ASSOC);
+                    if ($row === false) {
+                        // variante não existe
+                        throw new Exception("Variante #{$idVariante} não encontrada.");
+                    }
+                    $estoqueAtual = (int)$row['estoque'];
+                    if ($estoqueAtual < $qtd) {
+                        throw new Exception("Estoque insuficiente para a variante #{$idVariante}. Disponível: {$estoqueAtual}, solicitado: {$qtd}.");
+                    }
+                    $stmtUpdateVar->execute([':qtd' => $qtd, ':var' => $idVariante]);
+                } else {
+                    // Sem variante: tentar decrementar a coluna produtos.quantidade (se existir)
+                    try {
+                        $stmtUpdateProd->execute([':qtd' => $qtd, ':prod' => $idProduto]);
+                    } catch (\Exception $e) {
+                        // se a coluna não existir, ignoramos (não queremos quebrar)
+                    }
+                }
+
+                // Também tenta decrementar produtos.quantidade como redundância (se usar)
+                try {
+                    $stmtUpdateProd->execute([':qtd' => $qtd, ':prod' => $idProduto]);
+                } catch (\Exception $e) {
+                    // ignora se não existir
                 }
             }
 
-            // Identifica artesãos distintos envolvidos
-            $artisanStmt = $this->pdo->prepare(
+            // Identifica artesãos distintos envolvidos (a partir dos itens gravados)
+            $artisanStmt = $pdo->prepare(
                 "SELECT DISTINCT p.id_artesao
                  FROM itens_pedido ip
                  JOIN produtos p ON ip.id_produto = p.idPRODUTO
@@ -60,34 +98,94 @@ class Pedido {
             $artisanStmt->execute([':pid' => $pedidoId]);
             $artesaos = $artisanStmt->fetchAll(PDO::FETCH_COLUMN);
 
-            // Registra em pedidos_artesao para cada artesão
-            $paStmt = $this->pdo->prepare(
-                "INSERT INTO pedidos_artesao (id_pedido, id_artesao) VALUES (:pid, :aid)"
+            // Registra em pedidos_artesao para cada artesão (evita duplicatas usando INSERT IGNORE-like)
+            $paStmt = $pdo->prepare(
+                "INSERT INTO pedidos_artesao (id_pedido, id_artesao, status) VALUES (:pid, :aid, 'pendente')"
             );
             foreach ($artesaos as $aid) {
+                // proteção: somente insere se houver id
+                if (empty($aid)) continue;
                 $paStmt->execute([':pid' => $pedidoId, ':aid' => $aid]);
             }
 
-            $this->pdo->commit();
+            $pdo->commit();
             return $pedidoId;
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
+        } catch (\Exception $e) {
+            $pdo->rollBack();
             throw $e;
         }
     }
 
     /**
      * Atualiza o status de aprovação de um artesão em um pedido
+     * Se o artesão rejeitar, repõe o estoque dos itens que pertencem a esse artesão.
+     *
      * @param int $pedidoId
      * @param int $idArtesao
      * @param string $novoStatus ('aprovado' ou 'rejeitado')
-     * @return void
+     * @return bool
+     * @throws Exception
      */
-    public function atualizarStatusArtesao(int $pedidoId, int $idArtesao, string $novoStatus): void {
-        $stmt = $this->pdo->prepare(
-            "UPDATE pedidos_artesao SET status = :status WHERE id_pedido = :pid AND id_artesao = :aid"
-        );
-        $stmt->execute([':status' => $novoStatus, ':pid' => $pedidoId, ':aid' => $idArtesao]);
+    public function atualizarStatusArtesao(int $pedidoId, int $idArtesao, string $novoStatus): bool {
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+        try {
+            // Atualiza status e data de atualização
+            $stmt = $pdo->prepare(
+                "UPDATE pedidos_artesao
+                 SET status = :status, data_atualizacao = NOW()
+                 WHERE id_pedido = :pid AND id_artesao = :aid"
+            );
+            $stmt->execute([':status' => $novoStatus, ':pid' => $pedidoId, ':aid' => $idArtesao]);
+
+            // Se rejeitado, repor estoque apenas dos itens desse artesão
+            if ($novoStatus === 'rejeitado') {
+                // Busca itens do pedido que pertencem a esse artesão (trava para update)
+                $stmtItems = $pdo->prepare("
+                    SELECT ip.idintens_pedido, ip.id_produto, ip.id_variante, ip.quantidade
+                    FROM itens_pedido ip
+                    JOIN produtos p ON p.idPRODUTO = ip.id_produto
+                    WHERE ip.id_pedido = :pid
+                      AND p.id_artesao = :aid
+                    FOR UPDATE
+                ");
+                $stmtItems->execute([':pid' => $pedidoId, ':aid' => $idArtesao]);
+                $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+                $stmtUpdateVar = $pdo->prepare("UPDATE variantes SET estoque = estoque + :qtd WHERE idVARIANTE = :idvariante");
+                $stmtUpdateProd = $pdo->prepare("UPDATE produtos SET quantidade = quantidade + :qtd WHERE idPRODUTO = :idproduto");
+
+                foreach ($items as $it) {
+                    $qty = (int)$it['quantidade'];
+                    $idVar = !empty($it['id_variante']) ? (int)$it['id_variante'] : null;
+                    $idProd = (int)$it['id_produto'];
+
+                    if (!empty($idVar)) {
+                        $stmtUpdateVar->execute([':qtd' => $qty, ':idvariante' => $idVar]);
+                    } else {
+                        // fallback: tenta repor em produtos.quantidade
+                        try {
+                            $stmtUpdateProd->execute([':qtd' => $qty, ':idproduto' => $idProd]);
+                        } catch (\Exception $e) {
+                            // ignora
+                        }
+                    }
+
+                    // também tenta repor em produtos.quantidade por segurança
+                    try {
+                        $stmtUpdateProd->execute([':qtd' => $qty, ':idproduto' => $idProd]);
+                    } catch (\Exception $e) {
+                        // ignora se a coluna não existir
+                    }
+                }
+            }
+
+            $pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
     }
 
     /**
@@ -97,7 +195,7 @@ class Pedido {
      */
     public function listarPedidosPendentesPorArtesao(int $idArtesao): array {
         $sql = "
-            SELECT p.idPEDIDO, u.nomeUSUARIO, p.valor_total, pa.status AS status_artesao
+            SELECT p.idPEDIDO, u.nomeUSUARIO, p.valor_total, pa.status AS status_artesao, p.data_pedido
             FROM pedidos_artesao pa
             JOIN pedidos p ON pa.id_pedido = p.idPEDIDO
             JOIN usuarios u ON u.idUSUARIO = p.id_usuario

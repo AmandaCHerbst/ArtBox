@@ -141,9 +141,9 @@ try {
 <header>
   <section class="pedidos-status">
     <div class="status-item">
-      <a href="#">
+      <a href="pagamento.php">
         <i class="fa-regular fa-credit-card fa-2x"></i>
-        <p>Não pago</p>
+        <p>Pagamento</p>
       </a>
     </div>
     <div class="status-item">
