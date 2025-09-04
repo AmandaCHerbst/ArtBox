@@ -108,8 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cart
             );
 
-            $waPhones = [];
-
+            // --- Novo bloco: monta links por artesão (subtotal) ---
             try {
                 $dbName = $pdo->query('SELECT DATABASE()')->fetchColumn();
 
@@ -134,71 +133,163 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'vendedor_id','idVendedor','id_vendedor','seller_id',
                     'idARTESAO','id_artesao','artesao_id'
                 ];
-
                 $productUserCol = $detect_column('produtos', $possible_product_user_cols);
-
-                $userIds = [];
-                if ($productUserCol && !empty($productIds)) {
-                    $placeholdersP = implode(',', array_fill(0, count($productIds), '?'));
-                    $sql = "SELECT DISTINCT {$productUserCol} AS usr FROM produtos WHERE idPRODUTO IN ($placeholdersP)";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute($productIds);
-                    $rowsUsr = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                    foreach ($rowsUsr as $r) {
-                        if (!empty($r['usr'])) $userIds[] = $r['usr'];
-                    }
-                    $userIds = array_values(array_unique($userIds));
-                }
 
                 $possible_user_phone_cols = ['telefone','telefoneUSUARIO','celular','phone','telefone_artesao','telefone_usuario'];
                 $userPhoneCol = $detect_column('usuarios', $possible_user_phone_cols);
 
-                if (!empty($userIds) && $userPhoneCol) {
-                    $placeholdersU = implode(',', array_fill(0, count($userIds), '?'));
-                    $stmtUsers = $pdo->prepare("SELECT {$userPhoneCol} AS telefone FROM usuarios WHERE idUSUARIO IN ($placeholdersU)");
-                    $stmtUsers->execute($userIds);
-                    $uRows = $stmtUsers->fetchAll(PDO::FETCH_ASSOC);
-                    foreach ($uRows as $u) {
-                        if (!empty($u['telefone'])) $waPhones[] = $u['telefone'];
-                    }
+                $possible_prod_phone_cols = ['telefone','telefonePRODUTO','telefone_artesao','telefone_vendedor','phone'];
+                $prodPhoneCol = $detect_column('produtos', $possible_prod_phone_cols);
+
+                // Reconstruir mapa das variantes do carrinho
+                $variantMap = []; // idVARIANTE => ['idPRODUTO'=>..., 'preco'=>..., 'qty'=>..., 'nome'=>...]
+                foreach ($rows as $r) {
+                    $vid = $r['idVARIANTE'];
+                    $prodId = $r['idPRODUTO'];
+                    $qty = $cart[$vid]['quantidade'] ?? 0;
+                    $price = isset($cart[$vid]['preco']) ? $cart[$vid]['preco'] : $r['precoPRODUTO'];
+                    $variantMap[$vid] = [
+                        'idPRODUTO' => $prodId,
+                        'preco' => (float)$price,
+                        'qty' => (int)$qty,
+                        'nome' => $r['nomePRODUTO'] ?? '',
+                    ];
                 }
 
-                if (empty($waPhones)) {
-                    $possible_prod_phone_cols = ['telefone','telefonePRODUTO','telefone_artesao','telefone_vendedor','phone'];
-                    $prodPhoneCol = $detect_column('produtos', $possible_prod_phone_cols);
-                    if ($prodPhoneCol && !empty($productIds)) {
+                $productSellerMap = []; // idPRODUTO => sellerId
+                $productPhoneByProduct = []; // idPRODUTO => telefone (fallback)
+
+                if ($productUserCol && !empty($productIds)) {
+                    $placeholdersP = implode(',', array_fill(0, count($productIds), '?'));
+                    $sql = "SELECT idPRODUTO, {$productUserCol} AS seller" . ($prodPhoneCol ? ", {$prodPhoneCol} AS prod_phone" : "") . "
+                            FROM produtos WHERE idPRODUTO IN ($placeholdersP)";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($productIds);
+                    $prodRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($prodRows as $pr) {
+                        $productSellerMap[(int)$pr['idPRODUTO']] = ($pr['seller'] !== null && $pr['seller'] !== '') ? $pr['seller'] : null;
+                        if ($prodPhoneCol && !empty($pr['prod_phone'])) {
+                            $productPhoneByProduct[(int)$pr['idPRODUTO']] = $pr['prod_phone'];
+                        }
+                    }
+                } else {
+                    // fallback: buscar telefone do produto caso exista
+                    if (!empty($productIds) && $prodPhoneCol) {
                         $placeholdersP = implode(',', array_fill(0, count($productIds), '?'));
-                        $stmtProdPhone = $pdo->prepare("SELECT DISTINCT {$prodPhoneCol} AS telefone FROM produtos WHERE idPRODUTO IN ($placeholdersP)");
-                        $stmtProdPhone->execute($productIds);
-                        $pPhones = $stmtProdPhone->fetchAll(PDO::FETCH_ASSOC);
-                        foreach ($pPhones as $pp) {
-                            if (!empty($pp['telefone'])) $waPhones[] = $pp['telefone'];
+                        $stmt = $pdo->prepare("SELECT idPRODUTO, {$prodPhoneCol} AS prod_phone FROM produtos WHERE idPRODUTO IN ($placeholdersP)");
+                        $stmt->execute($productIds);
+                        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $pr) {
+                            if (!empty($pr['prod_phone'])) $productPhoneByProduct[(int)$pr['idPRODUTO']] = $pr['prod_phone'];
                         }
                     }
                 }
 
-                if (empty($waPhones) && !empty($userData['telefone'])) {
-                    $waPhones[] = $userData['telefone'];
+                // Calcular subtotais por sellerKey
+                $sellerSubtotals = []; // sellerKey => subtotal
+                $sellerProducts = [];
+                foreach ($variantMap as $vid => $info) {
+                    $pid = (int)$info['idPRODUTO'];
+                    $lineTotal = $info['preco'] * $info['qty'];
+
+                    if (isset($productSellerMap[$pid]) && $productSellerMap[$pid] !== null && $productSellerMap[$pid] !== '') {
+                        $sellerKey = 'user:' . $productSellerMap[$pid];
+                    } elseif (!empty($productPhoneByProduct[$pid])) {
+                        $sellerKey = 'phone:' . preg_replace('/\D+/', '', $productPhoneByProduct[$pid]);
+                    } else {
+                        $sellerKey = 'prod:' . $pid;
+                    }
+
+                    if (!isset($sellerSubtotals[$sellerKey])) {
+                        $sellerSubtotals[$sellerKey] = 0.0;
+                        $sellerProducts[$sellerKey] = [];
+                    }
+                    $sellerSubtotals[$sellerKey] += $lineTotal;
+                    $sellerProducts[$sellerKey][] = $info['nome'] . " x" . $info['qty'];
                 }
+
+                // Buscar telefones dos users (artesãos)
+                $userPhones = []; // id => telefone
+                $sellerUserIds = [];
+                foreach ($sellerSubtotals as $sk => $_) {
+                    if (strpos($sk, 'user:') === 0) {
+                        $sellerUserIds[] = (int)substr($sk, 5);
+                    }
+                }
+                $sellerUserIds = array_values(array_unique($sellerUserIds));
+                if (!empty($sellerUserIds) && $userPhoneCol) {
+                    $placeholdersU = implode(',', array_fill(0, count($sellerUserIds), '?'));
+                    $stmtUsers = $pdo->prepare("SELECT idUSUARIO AS id, {$userPhoneCol} AS telefone FROM usuarios WHERE idUSUARIO IN ($placeholdersU)");
+                    $stmtUsers->execute($sellerUserIds);
+                    foreach ($stmtUsers->fetchAll(PDO::FETCH_ASSOC) as $ur) {
+                        if (!empty($ur['telefone'])) $userPhones[(int)$ur['id']] = $ur['telefone'];
+                    }
+                }
+
+                // Montar links WhatsApp por artesão
+                $waLinks = [];
+                foreach ($sellerSubtotals as $sellerKey => $subtotal) {
+                    $phoneRaw = null;
+
+                    if (strpos($sellerKey, 'user:') === 0) {
+                        $uid = (int)substr($sellerKey, 5);
+                        if (!empty($userPhones[$uid])) {
+                            $phoneRaw = $userPhones[$uid];
+                        } else {
+                            // tentar telefone nos produtos desse user
+                            if ($productUserCol) {
+                                $stmtPhoneFallback = $pdo->prepare("SELECT DISTINCT " . ($prodPhoneCol ? "{$prodPhoneCol} AS telefone" : "NULL AS telefone") . "\n                                                         FROM produtos WHERE {$productUserCol} = ? LIMIT 1");
+                                $stmtPhoneFallback->execute([$uid]);
+                                $pf = $stmtPhoneFallback->fetch(PDO::FETCH_ASSOC);
+                                if ($pf && !empty($pf['telefone'])) $phoneRaw = $pf['telefone'];
+                            }
+                        }
+                    } elseif (strpos($sellerKey, 'phone:') === 0) {
+                        $phoneRaw = substr($sellerKey, 6);
+                    } elseif (strpos($sellerKey, 'prod:') === 0) {
+                        $pid = (int)substr($sellerKey, 5);
+                        if (!empty($productPhoneByProduct[$pid])) $phoneRaw = $productPhoneByProduct[$pid];
+                    }
+
+                    if ($phoneRaw) {
+                        $digits = sanitize_phone_for_whatsapp($phoneRaw);
+                        if ($digits === '') continue;
+
+                        $msg = "Olá! Recebi o pedido {$pedidoId}. A sua parte é " . format_br_currency($subtotal) .
+                               ". Poderia, por favor, enviar a chave PIX para o pagamento? Itens: " . implode(', ', array_unique($sellerProducts[$sellerKey] ?? []));
+
+                        $link = 'https://wa.me/' . $digits . '?text=' . urlencode($msg);
+                        $waLinks[] = [
+                            'seller_key' => $sellerKey,
+                            'phone_raw' => $phoneRaw,
+                            'phone_clean' => $digits,
+                            'subtotal' => $subtotal,
+                            'link' => $link,
+                        ];
+                    }
+                }
+
+                // fallback: se nenhum link para artesãos, usa telefone do comprador
+                if (empty($waLinks) && !empty($userData['telefone'])) {
+                    $digits = sanitize_phone_for_whatsapp($userData['telefone']);
+                    if ($digits !== '') {
+                        $msg = "Olá! Comprei na sua loja, o pedido {$pedidoId}, dando o total de {$formattedTotal}, poderia me enviar a chave pix para o pagamento?";
+                        $waLinks[] = [
+                            'phone_raw' => $userData['telefone'],
+                            'phone_clean' => $digits,
+                            'link' => 'https://wa.me/' . $digits . '?text=' . urlencode($msg),
+                        ];
+                    }
+                }
+
             } catch (Exception $ex) {
+                // se algo falhar aqui, deixa $waLinks como está (vazio) e continua
+                //error_log('Erro ao montar links WA: ' . $ex->getMessage());
             }
 
-            $waPhones = array_values(array_unique(array_filter($waPhones)));
-            foreach ($waPhones as $phoneRaw) {
-                $digits = sanitize_phone_for_whatsapp($phoneRaw);
-                if ($digits === '') continue;
-                $message = "Olá! Comprei na sua loja, o pedido {$pedidoId}, dando o total de {$formattedTotal}, poderia me enviar a chave pix para o pagamento?";
-                $link = 'https://wa.me/' . $digits . '?text=' . urlencode($message);
-                $waLinks[] = [
-                    'phone_raw' => $phoneRaw,
-                    'phone_clean' => $digits,
-                    'link' => $link,
-                ];
-            }
-
+            // limpar carrinho e marcar compra finalizada
             $_SESSION['cart'] = [];
-
             $compraFinalizada = true;
+
         } catch (Exception $e) {
             $mensagemErro = 'Erro ao processar pedido: ' . $e->getMessage();
         }
