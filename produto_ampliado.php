@@ -1,5 +1,4 @@
 <?php
-//sql
 session_start();
 include "menu.php";
 require __DIR__ . '/config/config.inc.php';
@@ -60,6 +59,31 @@ try {
     $imagens = [];
 }
 $slides = array_merge([$produto['imagemPRODUTO']], $imagens);
+
+// buscar avaliações/comentários do produto
+try {
+    $stmtCom = $pdo->prepare("
+        SELECT c.*, u.usuario AS nome_usuario, u.foto_perfil
+        FROM comentarios c
+        LEFT JOIN usuarios u ON c.usuario_id = u.idUSUARIO
+        WHERE c.produto_id = :pid
+        ORDER BY c.criado_em DESC
+    ");
+    $stmtCom->execute([':pid' => $idProduto]);
+    $comentarios = $stmtCom->fetchAll(PDO::FETCH_ASSOC);
+
+    // pega média e total
+    $stmtStats = $pdo->prepare("SELECT AVG(nota) AS media, COUNT(*) AS total FROM comentarios WHERE produto_id = :pid");
+    $stmtStats->execute([':pid' => $idProduto]);
+    $stats = $stmtStats->fetch(PDO::FETCH_ASSOC);
+    $mediaNotas = $stats && $stats['media'] ? round($stats['media'], 1) : 0;
+    $totalComentarios = $stats && $stats['total'] ? (int)$stats['total'] : 0;
+} catch (PDOException $e) {
+    $comentarios = [];
+    $mediaNotas = 0;
+    $totalComentarios = 0;
+}
+
 
 $stmtVar = $pdo->prepare('SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = :id');
 $stmtVar->execute([':id' => $idProduto]);
@@ -132,6 +156,33 @@ if ($cats) {
   margin-right: 6px;
   border: 1px solid #ccc;
 }
+
+/* ----- Avaliações (comentários) ----- */
+.avaliacoes-section { margin: 28px auto; max-width: 920px; background:#fff; border-radius:12px; padding:18px; box-shadow:0 4px 18px rgba(0,0,0,0.04); }
+.avaliacoes-section h2 { margin:0 0 12px; color:#5C3A21; }
+.avaliacao-empty { font-style:italic; color:#777; padding:10px 0; }
+
+.comentario-card { display:flex; gap:12px; padding:12px 8px; border-top:1px solid #f0f0f0; align-items:flex-start; }
+.comentario-card:first-of-type { border-top: none; }
+.comentario-thumb { width:44px; height:44px; border-radius:50%; object-fit:cover; border:1px solid #e6e6e9; }
+.comentario-body { flex:1; }
+.comentario-meta { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.comentario-meta strong { font-size:0.95rem; color:#222; }
+.comentario-meta small { color:#777; font-size:0.85rem; }
+.comentario-stars { color:#b08a3b; margin-right:8px; font-weight:700; }
+.comentario-text { color:#333; line-height:1.45; white-space:pre-wrap; margin-top:6px; }
+@media (max-width:720px) {
+  .comentario-card { gap:10px; }
+  .comentario-thumb { width:40px; height:40px; }
+}
+.avaliacao-stats {
+  font-size: 0.9em;
+  font-weight: normal;
+  color: #b08a3b;
+  margin-left: 8px;
+}
+
+
   </style>
 </head>
 <body>
@@ -189,6 +240,47 @@ if ($cats) {
       </div>
     </aside>
   </div>
+
+        <!-- ======= AVALIAÇÕES (somente leitura) ======= -->
+  <div class="avaliacoes-section" id="avaliacoes">
+    <h2>Avaliações
+  <?php if ($totalComentarios > 0): ?>
+    <span class="avaliacao-stats">
+      ★ <?= number_format($mediaNotas, 1, ',', '.') ?> (<?= $totalComentarios ?> comentário<?= $totalComentarios > 1 ? 's' : '' ?>)
+    </span>
+  <?php endif; ?>
+</h2>
+
+    <?php if (empty($comentarios)): ?>
+      <p class="avaliacao-empty">Ainda não há avaliações para este produto.</p>
+    <?php else: ?>
+      <?php foreach ($comentarios as $c): 
+        $foto = !empty($c['foto_perfil']) ? 'assets/img/perfis/' . htmlspecialchars($c['foto_perfil']) : 'assets/img/perfis/default.png';
+        $nome = !empty($c['nome_usuario']) ? htmlspecialchars($c['nome_usuario']) : 'Anônimo';
+        $data = !empty($c['criado_em']) ? date('d/m/Y H:i', strtotime($c['criado_em'])) : '';
+        $nota = isset($c['nota']) ? (int)$c['nota'] : 0;
+      ?>
+        <div class="comentario-card">
+          <img class="comentario-thumb" src="<?= $foto ?>" alt="Foto de <?= $nome ?>">
+          <div class="comentario-body">
+            <div class="comentario-meta">
+              <span class="comentario-stars" aria-hidden="true">
+                <?php for ($i=1;$i<=5;$i++) echo $i <= $nota ? '★' : '☆'; ?>
+              </span>
+              <strong><?= $nome ?></strong>
+              <?php if ($data): ?><small> — <?= $data ?></small><?php endif; ?>
+            </div>
+            <?php if (!empty(trim($c['comentario']))): ?>
+              <div class="comentario-text"><?= nl2br(htmlspecialchars($c['comentario'])) ?></div>
+            <?php else: ?>
+              <div class="comentario-text" style="color:#666;font-style:italic;">(Sem comentário — avaliação apenas)</div>
+            <?php endif; ?>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
+  <!-- ======= /AVALIAÇÕES ======= -->
 
   <script>
     window.addEventListener('DOMContentLoaded', () => {

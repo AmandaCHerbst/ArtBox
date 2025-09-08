@@ -159,7 +159,7 @@ try {
       </a>
     </div>
     <div class="status-item">
-      <a href="#">
+      <a href="avaliar.php">
         <i class="fa-regular fa-star fa-2x" style="color: #FFD43B;"></i>
         <p>Avaliar</p>
       </a>

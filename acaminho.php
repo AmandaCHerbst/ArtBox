@@ -23,7 +23,7 @@ try {
         $stmtUpdate->execute([':id' => $pedidoId, ':uid' => $idUsuario]);
 
         // Redireciona para evitar reenvio
-        header('Location: caminho.php');
+        header('Location: acaminho.php');
         exit;
     }
 
