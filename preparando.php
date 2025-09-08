@@ -17,21 +17,27 @@ try {
     $pedidoService = new Pedido($pdo);
     $itensService = new ItensPedido($pdo);
 
-    // Consulta pedidos com status "preparando" — ou seja, status 'pago' (não 'enviado' nem 'entregue')
+    // Busca todos os pares (pedido, artesão) que já foram aprovados — independentemente do status do pedido
     $stmt = $pdo->prepare(
-        "SELECT DISTINCT p.*
-         FROM pedidos p
-         JOIN pedidos_artesao pa ON pa.id_pedido = p.idPEDIDO
+        "SELECT DISTINCT p.idPEDIDO, p.valor_total, p.data_pedido, pa.id_artesao, pa.data_atualizacao
+         FROM pedidos_artesao pa
+         JOIN pedidos p ON pa.id_pedido = p.idPEDIDO
          WHERE p.id_usuario = :idUsuario
            AND pa.status = 'aprovado'
-           AND p.status = 'pago'
-         ORDER BY p.data_pedido DESC"
+         ORDER BY p.data_pedido DESC, pa.data_atualizacao DESC"
     );
     $stmt->execute([':idUsuario' => $idUsuario]);
-    $pedidosPreparando = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $aprovados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
     die("Erro: " . $e->getMessage());
+}
+
+/**
+ * Formata valor como moeda BR
+ */
+function format_br_currency($value) {
+    return 'R$ ' . number_format((float)$value, 2, ',', '.');
 }
 ?>
 
@@ -42,33 +48,95 @@ try {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pedidos em Preparo - ARTBOX</title>
   <link rel="stylesheet" href="assets/css/pedidos_preparo.css">
+  <style>
+    /* Pequeno refinamento visual para cards por artesão */
+    .pedido-card { background: #fff; border-radius: 8px; padding: 16px; margin: 14px auto; max-width: 900px; box-shadow: 0 6px 18px rgba(0,0,0,0.04); }
+    .pedido-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .pedido-valor { font-weight:700; color:#5C3A21; }
+    .itens-list { margin-top:8px; padding-left:10px; }
+    .item { padding:6px 0; border-bottom:1px solid #f0f0f0; }
+    .meta { font-size:0.9rem; color:#666; }
+    .subsection { margin-top:10px; padding:10px; border-radius:6px; background:#fbfbfb; }
+    .empty-msg { text-align:center; color:#666; margin-top:30px; }
+  </style>
 </head>
 <body>
   <header class="page-header">
-    <h1>Seus Pedidos em Preparo</h1>
+    <h1>Seus Itens em Preparo</h1>
+    <p class="meta">Aqui aparecem os itens que os artesãos já aprovaram — você pode acompanhar cada parte do pedido separadamente.</p>
   </header>
   <main>
-    <?php if (empty($pedidosPreparando)): ?>
-      <p class="empty-msg">Você ainda não possui pedidos em preparo.</p>
+    <?php if (empty($aprovados)): ?>
+      <p class="empty-msg">Você ainda não possui itens aprovados para preparo.</p>
     <?php else: ?>
-      <?php foreach ($pedidosPreparando as $pedido): ?>
+      <?php
+        // Para cada par (pedido, artesão aprovado) buscamos apenas os itens daquele artesão dentro do pedido
+        $stmtItems = $pdo->prepare("
+            SELECT ip.*, p.nomePRODUTO, p.id_artesao
+            FROM itens_pedido ip
+            JOIN produtos p ON ip.id_produto = p.idPRODUTO
+            WHERE ip.id_pedido = :pid
+              AND p.id_artesao = :aid
+        ");
+
+        $stmtArtNome = $pdo->prepare("SELECT nomeUSUARIO FROM usuarios WHERE idUSUARIO = :aid");
+      ?>
+
+      <?php foreach ($aprovados as $ap): ?>
+        <?php
+          $pedidoId = (int)$ap['idPEDIDO'];
+          $idArt = (int)$ap['id_artesao'];
+
+          // pega nome do artesão
+          $stmtArtNome->execute([':aid' => $idArt]);
+          $artRow = $stmtArtNome->fetch(PDO::FETCH_ASSOC);
+          $nomeArt = $artRow ? $artRow['nomeUSUARIO'] : "Artesão #{$idArt}";
+
+          // pega somente os itens deste pedido pertencentes a este artesão
+          $stmtItems->execute([':pid' => $pedidoId, ':aid' => $idArt]);
+          $itens = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
+
+          if (empty($itens)) {
+              // nada deste artesão nesse pedido (proteção) => pular
+              continue;
+          }
+
+          // calcular subtotal desses itens
+          $subtotal = 0.0;
+          foreach ($itens as $it) {
+              $qty = (int)($it['quantidade'] ?? 0);
+              $preco = isset($it['preco_unitario']) ? (float)$it['preco_unitario'] : 0.0;
+              $subtotal += ($preco * $qty);
+          }
+        ?>
+
         <div class="pedido-card">
           <div class="pedido-header">
-            <h2>Pedido #<?= $pedido['idPEDIDO'] ?></h2>
-            <span class="pedido-valor">R$ <?= number_format($pedido['valor_total'], 2, ',', '.') ?></span>
+            <div>
+              <h2>Pedido #<?= htmlspecialchars($pedidoId) ?></h2>
+              <div class="meta">Artesão: <strong><?= htmlspecialchars($nomeArt) ?></strong> — aprovado em <?= htmlspecialchars(date('d/m/Y H:i', strtotime($ap['data_atualizacao'] ?? $ap['data_pedido']))) ?></div>
+            </div>
+            <div style="text-align:right;">
+              <div class="pedido-valor"><?= format_br_currency($subtotal) ?></div>
+              <div class="meta">Status: <strong>Em preparo</strong></div>
+            </div>
           </div>
-          <p class="status">Status: <strong>Em preparo</strong></p>
-          <div class="itens-list">
-            <?php
-              $itens = $itensService->listarPorPedido($pedido['idPEDIDO']);
-              foreach ($itens as $item):
-            ?>
-              <div class="item">
-                • <?= htmlspecialchars($item['nomePRODUTO']) ?> — Qtd: <?= $item['quantidade'] ?> — R$ <?= number_format($item['preco_unitario'], 2, ',', '.') ?>
-              </div>
-            <?php endforeach; ?>
+
+          <div class="subsection">
+            <div class="itens-list">
+              <?php foreach ($itens as $item): ?>
+                <div class="item">
+                  • <?= htmlspecialchars($item['nomePRODUTO']) ?>
+                  <?php if (!empty($item['id_variante'])): ?>
+                    (variante #<?= htmlspecialchars($item['id_variante']) ?>)
+                  <?php endif; ?>
+                  — Qtd: <?= (int)$item['quantidade'] ?> — R$ <?= number_format((float)$item['preco_unitario'], 2, ',', '.') ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
           </div>
         </div>
+
       <?php endforeach; ?>
     <?php endif; ?>
   </main>
