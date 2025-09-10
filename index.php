@@ -10,57 +10,62 @@ try {
     die("Erro ao conectar ao banco: " . $e->getMessage());
 }
 
+/* ============================
+   Top 3 categorias mais vendidas
+============================ */
 $sqlTopCats = "
-  SELECT c.idCATEGORIA, c.nomeCATEGORIA, COUNT(pc.id_produto) AS total
+    SELECT c.idCATEGORIA, c.nomeCATEGORIA, COUNT(pc.id_produto) AS total
     FROM categorias c
     JOIN produto_categorias pc ON c.idCATEGORIA = pc.id_categoria
     JOIN variantes v ON pc.id_produto = v.id_produto
     WHERE v.estoque > 0
     GROUP BY c.idCATEGORIA
     ORDER BY total DESC
-    LIMIT 3";
+    LIMIT 3
+";
 $topCats = $pdo->query($sqlTopCats)->fetchAll(PDO::FETCH_ASSOC);
 
 $produtosPorCategoria = [];
 foreach ($topCats as $cat) {
-    $stmtP = $pdo->prepare(
-      "SELECT p.*,
-              (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) AS estoque_total
-         FROM produtos p
-         JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
-         WHERE pc.id_categoria = :cat
-           AND (SELECT SUM(v3.estoque) FROM variantes v3 WHERE v3.id_produto = p.idPRODUTO) > 0
-         LIMIT 20"
-    );
+    $stmtP = $pdo->prepare("
+        SELECT p.*,
+            (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) AS estoque_total
+        FROM produtos p
+        JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
+        WHERE pc.id_categoria = :cat
+          AND (SELECT SUM(v3.estoque) FROM variantes v3 WHERE v3.id_produto = p.idPRODUTO) > 0
+    ");
     $stmtP->execute([':cat' => $cat['idCATEGORIA']]);
     $items = $stmtP->fetchAll(PDO::FETCH_ASSOC);
+
     foreach ($items as &$p) {
-        $stmtVar = $pdo->prepare(
-            "SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque
-             FROM variantes WHERE id_produto = ? AND estoque > 0"
-        );
+        $stmtVar = $pdo->prepare("
+            SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque
+            FROM variantes
+            WHERE id_produto = ? AND estoque > 0
+        ");
         $stmtVar->execute([$p['idPRODUTO']]);
         $p['variantes'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
     }
     unset($p);
+
     $produtosPorCategoria[$cat['nomeCATEGORIA']] = $items;
 }
 
-// Paginação e busca
-$pagina = max(1, (int)($_GET['page'] ?? 1));
-$porPagina = 20;
-$offset = ($pagina - 1) * $porPagina;
+/* ============================
+   Busca (sem paginação)
+============================ */
 $q = trim($_GET['q'] ?? '');
 
 if ($q !== '') {
-    $stmtAll = $pdo->prepare(
-        "SELECT DISTINCT p.*,
-                (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) AS estoque_total
-         FROM produtos p
-         LEFT JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
-         LEFT JOIN categorias c    ON c.idCATEGORIA = pc.id_categoria
-         LEFT JOIN variantes v     ON v.id_produto = p.idPRODUTO
-         WHERE (
+    $stmtAll = $pdo->prepare("
+        SELECT DISTINCT p.*,
+            (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) AS estoque_total
+        FROM produtos p
+        LEFT JOIN produto_categorias pc ON p.idPRODUTO = pc.id_produto
+        LEFT JOIN categorias c ON c.idCATEGORIA = pc.id_categoria
+        LEFT JOIN variantes v ON v.id_produto = p.idPRODUTO
+        WHERE (
               p.nomePRODUTO         LIKE :q
            OR p.descricaoPRODUTO    LIKE :q
            OR p.nome_tipologia      LIKE :q
@@ -68,54 +73,40 @@ if ($q !== '') {
            OR c.nomeCATEGORIA       LIKE :q
            OR v.valor_tipologia     LIKE :q
            OR v.valor_especificacao LIKE :q
-         )
-         AND (SELECT SUM(v3.estoque) FROM variantes v3 WHERE v3.id_produto = p.idPRODUTO) > 0
-         ORDER BY p.idPRODUTO DESC
-         LIMIT :off, :lim"
-    );
+        )
+        AND (SELECT SUM(v3.estoque) FROM variantes v3 WHERE v3.id_produto = p.idPRODUTO) > 0
+        ORDER BY p.idPRODUTO DESC
+    ");
     $stmtAll->bindValue(':q', "%{$q}%", PDO::PARAM_STR);
-    $stmtAll->bindValue(':off', $offset, PDO::PARAM_INT);
-    $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
     $stmtAll->execute();
 } else {
-    $sql = "SELECT p.*,
-                (SELECT SUM(v.estoque) FROM variantes v WHERE v.id_produto = p.idPRODUTO) AS estoque_total
-            FROM produtos p
-            WHERE (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) > 0";
-    if ($pagina === 1) {
-        $sql .= " ORDER BY RAND() LIMIT :lim";
-    } else {
-        $sql .= " ORDER BY p.idPRODUTO LIMIT :off, :lim";
-    }
-    $stmtAll = $pdo->prepare($sql);
-    if ($pagina === 1) {
-        $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
-    } else {
-        $stmtAll->bindValue(':off', $offset, PDO::PARAM_INT);
-        $stmtAll->bindValue(':lim', $porPagina, PDO::PARAM_INT);
-    }
-    $stmtAll->execute();
+    $stmtAll = $pdo->query("
+        SELECT p.*,
+            (SELECT SUM(v.estoque) FROM variantes v WHERE v.id_produto = p.idPRODUTO) AS estoque_total
+        FROM produtos p
+        WHERE (SELECT SUM(v2.estoque) FROM variantes v2 WHERE v2.id_produto = p.idPRODUTO) > 0
+        ORDER BY p.idPRODUTO
+    ");
 }
+
 $allProducts = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
+
 foreach ($allProducts as &$p) {
-    $stmtVar = $pdo->prepare(
-        "SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque
-         FROM variantes WHERE id_produto = ? AND estoque > 0"
-    );
+    $stmtVar = $pdo->prepare("
+        SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque
+        FROM variantes
+        WHERE id_produto = ? AND estoque > 0
+    ");
     $stmtVar->execute([$p['idPRODUTO']]);
     $p['variantes'] = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
 }
 unset($p);
 
-// Nomes para o modal
-$primeiro = $allProducts[0] ?? null;
-$nomeTipologia = 'Tamanho';
+/* Rótulos padrão */
+$nomeTipologia     = 'Tamanho';
 $nomeEspecificacao = 'Cor';
-if ($primeiro) {
-    [$nomeTipologia]    = explode(':', $primeiro['nome_tipologia'] ?? 'Tamanho:');
-    [$nomeEspecificacao] = explode(':', $primeiro['nome_especificacao'] ?? 'Cor:');
-}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -133,7 +124,12 @@ if ($primeiro) {
       <h2><?= htmlspecialchars($catName) ?></h2>
       <div class="cat-row">
         <?php foreach ($items as $p): ?>
-          <div class="product-card" data-variantes='<?= json_encode($p['variantes'], JSON_HEX_TAG) ?>'>
+          <div
+            class="product-card"
+            data-variantes='<?= json_encode($p['variantes'], JSON_HEX_TAG) ?>'
+            data-tipologia="<?= htmlspecialchars($p['nome_tipologia'] ?? $nomeTipologia, ENT_QUOTES) ?>"
+            data-especificacao="<?= htmlspecialchars($p['nome_especificacao'] ?? $nomeEspecificacao, ENT_QUOTES) ?>"
+          >
             <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
               <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
             </a>
@@ -156,7 +152,12 @@ if ($primeiro) {
   <?php if (!empty($allProducts)): ?>
     <div class="grid">
       <?php foreach ($allProducts as $p): ?>
-        <div class="product-card" data-variantes='<?= json_encode($p['variantes'], JSON_HEX_TAG) ?>'>
+        <div
+          class="product-card"
+          data-variantes='<?= json_encode($p['variantes'], JSON_HEX_TAG) ?>'
+          data-tipologia="<?= htmlspecialchars($p['nome_tipologia'] ?? $nomeTipologia, ENT_QUOTES) ?>"
+          data-especificacao="<?= htmlspecialchars($p['nome_especificacao'] ?? $nomeEspecificacao, ENT_QUOTES) ?>"
+        >
           <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
             <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
           </a>
@@ -202,17 +203,34 @@ if ($primeiro) {
   const inputQty = document.getElementById('modal-quantidade');
   let currentVars = [];
 
+  // helper para obter o label element
+  const labelTam = document.querySelector('label[for="modal-tamanho"]');
+  const labelCor = document.querySelector('label[for="modal-cor"]');
+
   document.querySelectorAll('.add-cart-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const card = btn.closest('.product-card');
       currentVars = JSON.parse(card.dataset.variantes || '[]');
+
+      // definir nome do produto no modal
       document.getElementById('modal-nome-produto').innerText = btn.dataset.nome;
       document.getElementById('modal-id-produto').value = btn.dataset.id;
+
+      // pegar rótulos de tipologia/especificacao do próprio produto (data attributes)
+      const rawTip = (card.dataset.tipologia || 'Tamanho').toString().replace(/:$/, '').trim();
+      const rawEsp = (card.dataset.especificacao || 'Cor').toString().replace(/:$/, '').trim();
+
+      // atualizar labels do modal dinamicamente
+      labelTam.innerText = rawTip + ':';
+      labelCor.innerText = rawEsp + ':';
+
+      // popular selects com variantes
       const sizes = [...new Set(currentVars.map(v => v.valor_tipologia))];
       selTam.innerHTML = '<option value="">Selecione</option>' + sizes.map(s => `<option>${s}</option>`).join('');
       selCor.innerHTML = '<option value="">Selecione</option>';
       stockInfo.textContent = 'Estoque: -';
       inputQty.value = 1;
+      inputQty.max = 99999;
       modal.style.display = 'flex';
     });
   });
@@ -222,6 +240,8 @@ if ($primeiro) {
     const colors = [...new Set(currentVars.filter(v => v.valor_tipologia === size).map(v => v.valor_especificacao))];
     selCor.innerHTML = '<option value="">Selecione</option>' + colors.map(c => `<option>${c}</option>`).join('');
     stockInfo.textContent = 'Estoque: -';
+    inputQty.value = 1;
+    inputQty.max = 99999;
   });
 
   selCor.addEventListener('change', () => {

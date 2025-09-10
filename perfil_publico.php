@@ -29,12 +29,19 @@ $stmtProd = $pdo->prepare("SELECT * FROM produtos WHERE id_artesao = :id");
 $stmtProd->execute([':id' => $idArtesao]);
 $produtos = $stmtProd->fetchAll(PDO::FETCH_ASSOC);
 
+// Definir rótulos a partir do primeiro produto (fallback se não houver)
 $primeiroProduto = $produtos[0] ?? null;
 $nomeTipologia = 'Tamanho';
 $nomeEspecificacao = 'Cor';
 if ($primeiroProduto) {
-    [$nomeTipologia] = explode(':', $primeiroProduto['tamanhos_disponiveis'] ?? 'Tamanho:');
-    [$nomeEspecificacao] = explode(':', $primeiroProduto['cores_disponiveis'] ?? 'Cor:');
+    if (!empty($primeiroProduto['nome_tipologia'])) {
+        $parts = explode(':', $primeiroProduto['nome_tipologia'], 2);
+        $nomeTipologia = trim($parts[0]) ?: $nomeTipologia;
+    }
+    if (!empty($primeiroProduto['nome_especificacao'])) {
+        $parts = explode(':', $primeiroProduto['nome_especificacao'], 2);
+        $nomeEspecificacao = trim($parts[0]) ?: $nomeEspecificacao;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -72,8 +79,28 @@ if ($primeiroProduto) {
             $stmtVar = $pdo->prepare("SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = ?");
             $stmtVar->execute([$p['idPRODUTO']]);
             $pVars = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
+            // preparar rótulos por produto (fallback para os nomes globais)
+            $rtTip = 'Tamanho';
+            $rtEsp = 'Cor';
+            if (!empty($p['nome_tipologia'])) {
+                $parts = explode(':', $p['nome_tipologia'], 2);
+                $rtTip = trim($parts[0]) ?: $rtTip;
+            } else {
+                $rtTip = $nomeTipologia;
+            }
+            if (!empty($p['nome_especificacao'])) {
+                $parts = explode(':', $p['nome_especificacao'], 2);
+                $rtEsp = trim($parts[0]) ?: $rtEsp;
+            } else {
+                $rtEsp = $nomeEspecificacao;
+            }
           ?>
-          <div class="produto-card" data-variantes='<?= json_encode($pVars, JSON_HEX_TAG) ?>'>
+          <div
+            class="produto-card"
+            data-variantes='<?= json_encode($pVars, JSON_HEX_TAG) ?>'
+            data-tipologia="<?= htmlspecialchars($rtTip, ENT_QUOTES) ?>"
+            data-especificacao="<?= htmlspecialchars($rtEsp, ENT_QUOTES) ?>"
+          >
             <a href="produto_ampliado.php?id=<?= $p['idPRODUTO'] ?>">
               <img src="<?= htmlspecialchars($p['imagemPRODUTO']) ?>" alt="<?= htmlspecialchars($p['nomePRODUTO']) ?>">
               <h3><?= htmlspecialchars($p['nomePRODUTO']) ?></h3>
@@ -94,9 +121,9 @@ if ($primeiroProduto) {
     <h3 id="modal-nome-produto">Produto</h3>
     <input type="hidden" id="modal-id-produto">
     <label for="modal-tamanho"><?= htmlspecialchars($nomeTipologia) ?>:</label>
-    <select id="modal-tamanho" required><option value="">Selecione</option></select>
+    <select id="modal-tamanho" required><option value=""><?= 'Selecione ' . htmlspecialchars($nomeTipologia) ?></option></select>
     <label for="modal-cor"><?= htmlspecialchars($nomeEspecificacao) ?>:</label>
-    <select id="modal-cor" required><option value="">Selecione</option></select>
+    <select id="modal-cor" required><option value=""><?= 'Selecione ' . htmlspecialchars($nomeEspecificacao) ?></option></select>
     <p id="modal-stock">Estoque: -</p>
     <label for="modal-quantidade">Quantidade:</label>
     <input type="number" id="modal-quantidade" value="1" min="1" required>
@@ -115,17 +142,29 @@ const stockInfo = document.getElementById('modal-stock');
 const inputQty = document.getElementById('modal-quantidade');
 let currentVars = [];
 
+const labelTam = document.querySelector('label[for="modal-tamanho"]');
+const labelCor = document.querySelector('label[for="modal-cor"]');
+
 document.querySelectorAll('.add-cart-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const card = btn.closest('.produto-card');
     currentVars = JSON.parse(card.dataset.variantes || '[]');
     document.getElementById('modal-nome-produto').innerText = btn.dataset.nome;
     document.getElementById('modal-id-produto').value = btn.dataset.id;
-    const sizes = [...new Set(currentVars.map(v => v.valor_tipologia))];
-    selTam.innerHTML = '<option value="">Selecione</option>' + sizes.map(s => `<option>${s}</option>`).join('');
-    selCor.innerHTML = '<option value="">Selecione</option>';
+
+    // pegar rótulos do próprio produto (data attributes)
+    const rawTip = (card.dataset.tipologia || 'Tamanho').toString().replace(/:$/, '').trim();
+    const rawEsp = (card.dataset.especificacao || 'Cor').toString().replace(/:$/, '').trim();
+
+    // atualizar labels e option placeholder
+    labelTam.innerText = rawTip + ':';
+    labelCor.innerText = rawEsp + ':';
+
+    selTam.innerHTML = `<option value="">Selecione ${rawTip}</option>` + [...new Set(currentVars.map(v => v.valor_tipologia))].map(s => `<option>${s}</option>`).join('');
+    selCor.innerHTML = `<option value="">Selecione ${rawEsp}</option>`;
     stockInfo.textContent = 'Estoque: -';
     inputQty.value = 1;
+    inputQty.max = 99999;
     modal.style.display = 'flex';
   });
 });
@@ -133,8 +172,10 @@ document.querySelectorAll('.add-cart-btn').forEach(btn => {
 selTam.addEventListener('change', () => {
   const size = selTam.value;
   const colors = [...new Set(currentVars.filter(v => v.valor_tipologia === size).map(v => v.valor_especificacao))];
-  selCor.innerHTML = '<option value="">Selecione</option>' + colors.map(c => `<option>${c}</option>`).join('');
+  const curEsp = (document.querySelector('label[for="modal-cor"]').innerText || 'Cor').replace(/:$/, '').trim();
+  selCor.innerHTML = `<option value="">Selecione ${curEsp}</option>` + colors.map(c => `<option>${c}</option>`).join('');
   stockInfo.textContent = 'Estoque: -';
+  inputQty.value = 1;
 });
 
 selCor.addEventListener('change', () => {
@@ -150,6 +191,7 @@ document.getElementById('modal-close').addEventListener('click', () => modal.sty
 document.getElementById('modal-add').addEventListener('click', () => {
   const selected = currentVars.find(v => v.valor_tipologia === selTam.value && v.valor_especificacao === selCor.value);
   const idVar = selected ? selected.idVARIANTE : null;
+  if (!idVar) { alert('Selecione um ' + (labelTam.innerText.replace(':','')) + ' e ' + (labelCor.innerText.replace(':','')) + ' válidos.'); return; }
   const qty = inputQty.value;
   const form = document.createElement('form');
   form.method = 'post';

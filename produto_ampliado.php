@@ -88,8 +88,20 @@ try {
 $stmtVar = $pdo->prepare('SELECT idVARIANTE, valor_tipologia, valor_especificacao, estoque FROM variantes WHERE id_produto = :id');
 $stmtVar->execute([':id' => $idProduto]);
 $variantes = $stmtVar->fetchAll(PDO::FETCH_ASSOC);
-$tamanhos = array_unique(array_column($variantes, 'valor_tipologia'));
-$cores = array_unique(array_column($variantes, 'valor_especificacao'));
+$tamanhos = array_values(array_filter(array_unique(array_column($variantes, 'valor_tipologia'))));
+$cores = array_values(array_filter(array_unique(array_column($variantes, 'valor_especificacao'))));
+
+// Determinar rótulos dinâmicos (retira possível ":" e trim)
+$nomeTipologia = 'Tamanho';
+$nomeEspecificacao = 'Cor';
+if (!empty($produto['nome_tipologia'])) {
+    $parts = explode(':', $produto['nome_tipologia'], 2);
+    $nomeTipologia = trim($parts[0]) ?: $nomeTipologia;
+}
+if (!empty($produto['nome_especificacao'])) {
+    $parts = explode(':', $produto['nome_especificacao'], 2);
+    $nomeEspecificacao = trim($parts[0]) ?: $nomeEspecificacao;
+}
 
 $recomendados = [];
 $cats = !empty($produto['categorias']) ? explode(',', $produto['categorias']) : [];
@@ -213,8 +225,28 @@ if ($cats) {
       </div>
       <form method="post" action="cart.php" onsubmit="return validarCarrinho();">
         <div class="options-container">
-          <div class="product-option"><label for="select-tamanho">Tamanho</label><select id="select-tamanho"><option value="">Selecione</option><?php foreach($tamanhos as $t): ?><option><?= htmlspecialchars($t) ?></option><?php endforeach; ?></select></div>
-          <div class="product-option"><label for="select-cor">Cor</label><select id="select-cor"><option value="">Selecione</option><?php foreach($cores as $c): ?><option><?= htmlspecialchars($c) ?></option><?php endforeach; ?></select></div>
+          <div class="product-option">
+            <label for="select-tamanho"><?= htmlspecialchars($nomeTipologia) ?></label>
+            <select id="select-tamanho">
+  <option value=""><?= 'Selecione ' . htmlspecialchars($nomeTipologia) ?></option>
+  <?php foreach ($tamanhos as $t): ?>
+    <?php if ($t === '') continue; ?>
+    <option><?= htmlspecialchars($t) ?></option>
+  <?php endforeach; ?>
+</select>
+
+          </div>
+          <div class="product-option">
+            <label for="select-cor"><?= htmlspecialchars($nomeEspecificacao) ?></label>
+            <select id="select-cor">
+  <option value=""><?= 'Selecione ' . htmlspecialchars($nomeEspecificacao) ?></option>
+  <?php foreach ($cores as $c): ?>
+    <?php if ($c === '') continue; ?>
+    <option><?= htmlspecialchars($c) ?></option>
+  <?php endforeach; ?>
+</select>
+
+          </div>
           <p id="stock-info">Estoque: -</p>
         </div>
         <div class="action-buttons">
@@ -290,11 +322,48 @@ if ($cats) {
         setTimeout(() => toast.classList.remove('show'), 3000);
       }
     });
-    const variantes = <?= json_encode($variantes) ?>;
-    const selT = document.getElementById('select-tamanho'), selC = document.getElementById('select-cor'), stock = document.getElementById('stock-info'), qty = document.getElementById('input-quantidade');
-    selT.addEventListener('change', () => { const size = selT.value; const cores = [...new Set(variantes.filter(v => v.valor_tipologia===size).map(v=>v.valor_especificacao))]; selC.innerHTML = '<option value="">Selecione</option>'+cores.map(c=>`<option>${c}</option>`).join(''); stock.textContent='Estoque: -'; });
-    selC.addEventListener('change', () => { const v = variantes.find(v=>v.valor_tipologia===selT.value&&v.valor_especificacao===selC.value)||{}; stock.textContent='Estoque: '+(v.estoque||0); qty.max=v.estoque||1; qty.value=v.estoque?1:0; });
-    function validarCarrinho(){ const tam=selT.value, cor=selC.value, variante=variantes.find(v=>v.valor_tipologia===tam&&v.valor_especificacao===cor); if(!tam||!cor||!variante){alert('Selecione um tamanho e uma cor válidos.');return false;} document.getElementById('input-var-id').value=variante.idVARIANTE;return true; }
+
+    // dados vindos do PHP
+    const variantes = <?= json_encode($variantes, JSON_HEX_TAG) ?> || [];
+    const nomeTipologia = <?= json_encode($nomeTipologia) ?>;
+    const nomeEspecificacao = <?= json_encode($nomeEspecificacao) ?>;
+
+    const selT = document.getElementById('select-tamanho'),
+          selC = document.getElementById('select-cor'),
+          stock = document.getElementById('stock-info'),
+          qty = document.getElementById('input-quantidade');
+
+    // quando trocar tamanho, popular cores
+    selT.addEventListener('change', () => {
+      const size = selT.value;
+      const cores = [...new Set(variantes.filter(v => v.valor_tipologia === size).map(v => v.valor_especificacao))];
+      selC.innerHTML = `<option value="">Selecione ${nomeEspecificacao}</option>` + cores.map(c => `<option>${c}</option>`).join('');
+      stock.textContent = 'Estoque: -';
+      qty.value = 1;
+      qty.max = 99999;
+    });
+
+    // quando trocar cor, mostrar estoque e ajustar quantidade
+    selC.addEventListener('change', () => {
+      const v = variantes.find(v => v.valor_tipologia === selT.value && v.valor_especificacao === selC.value) || {};
+      const st = v.estoque || 0;
+      stock.textContent = 'Estoque: ' + st;
+      qty.max = st || 1;
+      qty.value = st ? 1 : 0;
+    });
+
+    function validarCarrinho(){
+      const tam = selT.value, cor = selC.value;
+      const variante = variantes.find(v => v.valor_tipologia === tam && v.valor_especificacao === cor);
+      if (!tam || !cor || !variante) {
+        alert(`Selecione ${nomeTipologia} e ${nomeEspecificacao} válidos.`);
+        return false;
+      }
+      document.getElementById('input-var-id').value = variante.idVARIANTE;
+      return true;
+    }
+
+    // carrossel / lightbox
     const slides = Array.from(document.querySelectorAll('.slide')), carousel=document.getElementById('carrossel'); let current=0;
     function showSlide(i){carousel.style.transform=`translateX(-${i*100}%)`;current=i;}
     function nextSlide(){showSlide((current+1)%slides.length);} function prevSlide(){showSlide((current-1+slides.length)%slides.length);}

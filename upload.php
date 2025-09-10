@@ -188,7 +188,7 @@ try {
     if (isset($_FILES['product-images'])) {
         $extraFiles = $_FILES['product-images'];
         $countFiles = count($extraFiles['name']);
-        $maxExtras = 5;
+        $maxExtras = 20; // alterado: agora aceita até 20 imagens extras
         for ($i = 0; $i < min($countFiles, $maxExtras); $i++) {
             if ($extraFiles['error'][$i] === UPLOAD_ERR_OK) {
                 $ext = strtolower(pathinfo($extraFiles['name'][$i], PATHINFO_EXTENSION));
